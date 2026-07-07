@@ -42,6 +42,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **`internal/render` no longer panics.** `Markdown`/`HTML` ignore the
+  unreachable template-execution error (templates are embedded and validated at
+  init) instead of panicking, honoring the no-panics-in-library-code convention.
 - **Docs filenames uppercased; `docs/index.md` → `docs/README.md`** so the
   `docs/` folder auto-renders its index on GitHub. Per-language guides are now
   `docs/GO.md`, `docs/TYPESCRIPT.md`, etc.

@@ -45,10 +45,9 @@ func Markdown(s Summary) string {
 		return "_No coverage artifacts found._\n"
 	}
 	var b strings.Builder
-	if err := mdTmpl.Execute(&b, buildView(s)); err != nil {
-		// Templates are embedded and tested; execution cannot fail at runtime.
-		panic(err)
-	}
+	// Templates are embedded and validated at init (template.Must), so execution
+	// cannot fail for valid input; ignore the unreachable error rather than panic.
+	_ = mdTmpl.Execute(&b, buildView(s))
 	return b.String()
 }
 
@@ -59,9 +58,8 @@ func HTML(s Summary) string {
 		view
 		Empty bool
 	}{view: buildView(s), Empty: len(s.Workspaces) == 0}
-	if err := htmlTmpl.Execute(&b, data); err != nil {
-		panic(err)
-	}
+	// See Markdown: the embedded template cannot fail to execute for valid input.
+	_ = htmlTmpl.Execute(&b, data)
 	return b.String()
 }
 

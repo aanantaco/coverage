@@ -139,7 +139,7 @@ workspaces:
 func TestRunFolderGroupDepth(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "coverage-api.xml", coverageDoc(map[string][]int{
-		"src/api/companies/services/deep/foo.ts": {1, 1},
+		"src/api/thing/services/deep/foo.ts": {1, 1},
 	}))
 	cfgPath := filepath.Join(dir, "coverage.yaml")
 	write(t, dir, "coverage.yaml", "folder_group_depth: 2\n")

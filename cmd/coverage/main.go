@@ -1,4 +1,4 @@
-// Command coverage-report aggregates Cobertura coverage and JUnit test-result
+// Command coverage aggregates Cobertura coverage and JUnit test-result
 // artifacts into a single Markdown summary for a CI run, with optional
 // config-driven display and regression detection against a baseline.
 package main
@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	fs := flag.NewFlagSet("coverage-report", flag.ContinueOnError)
+	fs := flag.NewFlagSet("coverage", flag.ContinueOnError)
 
 	input := fs.String("input", "", "directory containing coverage-*.xml and tests-*.xml artifacts (required)")
 	output := fs.String("output", "-", "output path; '-' is stdout. A file is appended to.")

@@ -44,9 +44,9 @@ inputs:
   go-version:
     description: Go version used to install the tool.
     required: false
-    default: "1.24"
+    default: "1.26"
   version:
-    description: Version (git ref/tag) of the coverage-report tool to install.
+    description: Version (git ref/tag) of the coverage tool to install.
     required: false
     default: latest
 
@@ -59,9 +59,9 @@ runs:
         go-version: ${{ inputs.go-version }}
         cache: false
 
-    - name: Install coverage-report
+    - name: Install coverage
       shell: bash
-      run: go install github.com/aanantaco/coverage/cmd/coverage-report@${{ inputs.version }}
+      run: go install github.com/aanantaco/coverage/cmd/coverage@${{ inputs.version }}
 
     - name: Render coverage summary
       shell: bash
@@ -72,4 +72,4 @@ runs:
         [ -n "${{ inputs.baseline }}" ]     && args+=(--baseline "${{ inputs.baseline }}")
         [ -n "${{ inputs.fail-on-drop }}" ] && args+=(--fail-on-drop "${{ inputs.fail-on-drop }}")
         [ -n "${{ inputs.emit-json }}" ]    && args+=(--emit-json "${{ inputs.emit-json }}")
-        coverage-report "${args[@]}"
+        coverage "${args[@]}"

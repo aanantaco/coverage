@@ -32,6 +32,6 @@
 # Migrations and SQLC-generated code (no business logic)
 shared/migration/**
 schemata/**
-services/compliance-worker/internal/store/**
-services/compliance-worker/schemata/**
-services/compliance-worker/internal/database/**
+services/thinger/internal/store/**
+services/thinger/schemata/**
+services/thinger/internal/database/**

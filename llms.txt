@@ -1,0 +1,53 @@
+# coverage
+
+> A single Go binary that aggregates Cobertura coverage XML and JUnit
+> test-result XML from every project in a repo into one Markdown or HTML report,
+> with optional regression detection. Language-agnostic: anything that can emit
+> Cobertura + JUnit works.
+
+## The contract (stable interface)
+
+Each project/test job produces two files in one shared directory:
+
+- `coverage-<id>.xml` — Cobertura coverage
+- `tests-<id>.xml` — JUnit test results (optional; the Tests column shows `—` if absent)
+
+`<id>` is any workspace id you choose (it may contain dashes). Then, in one
+aggregation job, download every `coverage-*` / `tests-*` artifact into a single
+directory (`merge-multiple: true`) and run the tool once:
+
+    coverage --input ./cov --output "$GITHUB_STEP_SUMMARY"      # Markdown
+    coverage --input ./cov --output report.html                # HTML (auto-detected)
+
+This contract is the thing to rely on. How each project *produces* those two
+files is language- and version-specific (see the recipes) and changes over time.
+
+## For AI assistants wiring this into a repo
+
+1. Detect the repo's languages and, per project, run its test suite so it emits
+   `coverage-<id>.xml` (Cobertura) and `tests-<id>.xml` (JUnit). Use the recipes
+   below as a starting point, but adapt them to the repo's actual test setup and
+   the current versions of the tools involved.
+2. Upload both files as artifacts named `coverage-<id>` / `tests-<id>` (use
+   `if: always()`).
+3. Add one aggregation job that downloads them and runs `coverage` as above.
+4. `coverage init` scaffolds this structure (report job + per-language test-job
+   stubs); fill each stub's TODO using the matching recipe.
+
+## Per-language recipes
+
+- Go: https://github.com/aanantaco/coverage/blob/main/docs/GO.md
+- TypeScript/JavaScript: https://github.com/aanantaco/coverage/blob/main/docs/TYPESCRIPT.md
+- Rust: https://github.com/aanantaco/coverage/blob/main/docs/RUST.md
+- Python: https://github.com/aanantaco/coverage/blob/main/docs/PYTHON.md
+- Java: https://github.com/aanantaco/coverage/blob/main/docs/JAVA.md
+- C#/.NET: https://github.com/aanantaco/coverage/blob/main/docs/CSHARP.md
+
+## Reference
+
+- Docs index: https://github.com/aanantaco/coverage/blob/main/docs/README.md
+- Config (coverage.yaml): https://github.com/aanantaco/coverage/blob/main/coverage.yaml.example
+- Ignore (.coverageignore): https://github.com/aanantaco/coverage/blob/main/.coverageignore.example
+- Regression / deltas across runs: https://github.com/aanantaco/coverage/blob/main/docs/REGRESSION.md
+- Example workflow: https://github.com/aanantaco/coverage/blob/main/examples/coverage.yml
+- coverage init: https://github.com/aanantaco/coverage/blob/main/docs/INIT.md

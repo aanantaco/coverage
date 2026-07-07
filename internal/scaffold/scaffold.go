@@ -1,6 +1,12 @@
 // Package scaffold implements `coverage init`: it detects the languages in a
-// repository and non-destructively scaffolds a tailored GitHub Actions
-// workflow plus starter config files. It never overwrites existing files.
+// repository and non-destructively scaffolds a tailored GitHub Actions workflow
+// plus starter config files. It never overwrites existing files.
+//
+// The generated workflow's report/aggregation job is complete; each per-language
+// test job is a framework-agnostic stub with a TODO pointing at the docs for the
+// actual test command. That split keeps `init` durable — the volatile,
+// per-framework commands live in the docs (and are easy for a human or an AI
+// assistant to fill in), not baked into the tool.
 package scaffold
 
 import (
@@ -12,12 +18,12 @@ import (
 	"strings"
 )
 
-// Language is a detected language/toolchain and its generated test job.
+// Language is a detected language/toolchain.
 type Language struct {
 	Name    string // human name, e.g. "Go"
 	ID      string // workspace id used in artifact filenames, e.g. "go"
 	JobName string // workflow job name, e.g. "test-go"
-	job     string // the test-job YAML snippet (indented under jobs:)
+	Doc     string // per-language doc filename, e.g. "GO.md"
 }
 
 // Options configures Run.
@@ -55,7 +61,6 @@ func Run(opts Options) error {
 	fmt.Fprintf(opts.Stdout, "Detected: %s\n\n", strings.Join(names, ", "))
 
 	files := Files(langs)
-	// Deterministic order for output.
 	paths := make([]string, 0, len(files))
 	for p := range files {
 		paths = append(paths, p)
@@ -88,8 +93,8 @@ func Run(opts Options) error {
 	}
 
 	fmt.Fprintf(opts.Stdout, "\n%d created, %d skipped.\n", created, skipped)
-	fmt.Fprintln(opts.Stdout, "\nNext: review the generated files (test commands are best-effort), pin the")
-	fmt.Fprintln(opts.Stdout, "coverage action to a commit SHA, then commit.")
+	fmt.Fprintln(opts.Stdout, "\nNext: fill in each test job's TODO with your test command (see the linked")
+	fmt.Fprintln(opts.Stdout, "docs), pin the coverage action to a commit SHA, then commit.")
 	return nil
 }
 
@@ -117,22 +122,22 @@ func Detect(dir string) []Language {
 	}
 
 	if has("go.mod") {
-		out = append(out, Language{Name: "Go", ID: "go", JobName: "test-go", job: goJob})
+		out = append(out, Language{Name: "Go", ID: "go", JobName: "test-go", Doc: "GO.md"})
 	}
 	if has("package.json") {
-		out = append(out, Language{Name: "TypeScript/JavaScript", ID: "web", JobName: "test-web", job: nodeJob(dir)})
+		out = append(out, Language{Name: "TypeScript/JavaScript", ID: "web", JobName: "test-web", Doc: "TYPESCRIPT.md"})
 	}
 	if has("pyproject.toml") || has("setup.py") || has("setup.cfg") || has("tox.ini") || has("pytest.ini") || has("requirements.txt") {
-		out = append(out, Language{Name: "Python", ID: "py", JobName: "test-py", job: pythonJob})
+		out = append(out, Language{Name: "Python", ID: "py", JobName: "test-py", Doc: "PYTHON.md"})
 	}
 	if has("Cargo.toml") {
-		out = append(out, Language{Name: "Rust", ID: "rust", JobName: "test-rust", job: rustJob})
+		out = append(out, Language{Name: "Rust", ID: "rust", JobName: "test-rust", Doc: "RUST.md"})
 	}
 	if has("pom.xml") || has("build.gradle") || has("build.gradle.kts") {
-		out = append(out, Language{Name: "Java", ID: "java", JobName: "test-java", job: javaJob})
+		out = append(out, Language{Name: "Java", ID: "java", JobName: "test-java", Doc: "JAVA.md"})
 	}
 	if glob("*.csproj") || glob("*.sln") {
-		out = append(out, Language{Name: "C#/.NET", ID: "dotnet", JobName: "test-dotnet", job: dotnetJob})
+		out = append(out, Language{Name: "C#/.NET", ID: "dotnet", JobName: "test-dotnet", Doc: "CSHARP.md"})
 	}
 
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
@@ -144,7 +149,7 @@ func workflow(langs []Language) string {
 	var b strings.Builder
 	b.WriteString(workflowHeader)
 	for _, l := range langs {
-		b.WriteString(l.job)
+		b.WriteString(stubJob(l))
 		b.WriteString("\n")
 	}
 	needs := make([]string, len(langs))
@@ -153,16 +158,4 @@ func workflow(langs []Language) string {
 	}
 	fmt.Fprintf(&b, reportJob, "["+strings.Join(needs, ", ")+"]")
 	return b.String()
-}
-
-// nodeJob picks the Vitest or Jest variant based on package.json contents.
-func nodeJob(dir string) string {
-	data, _ := os.ReadFile(filepath.Join(dir, "package.json"))
-	s := string(data)
-	switch {
-	case strings.Contains(s, "\"jest\""):
-		return nodeJestJob
-	default: // vitest, or unknown -> vitest with a TODO
-		return nodeVitestJob
-	}
 }

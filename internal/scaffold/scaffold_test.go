@@ -47,29 +47,14 @@ func TestDetectNone(t *testing.T) {
 	}
 }
 
-func TestNodeVariant(t *testing.T) {
-	jestDir := t.TempDir()
-	write(t, jestDir, "package.json", `{"devDependencies":{"jest":"^29"}}`)
-	if job := nodeJob(jestDir); !strings.Contains(job, "jest --coverage") {
-		t.Error("expected jest job for a jest package.json")
-	}
-
-	vitestDir := t.TempDir()
-	write(t, vitestDir, "package.json", `{"devDependencies":{"vitest":"^1"}}`)
-	if job := nodeJob(vitestDir); !strings.Contains(job, "vitest run") {
-		t.Error("expected vitest job for a vitest package.json")
-	}
-}
-
 func TestGeneratedWorkflowIsValidYAML(t *testing.T) {
-	// Every language present, to exercise all job snippets.
 	langs := []Language{
-		{Name: "Go", ID: "go", JobName: "test-go", job: goJob},
-		{Name: "TypeScript/JavaScript", ID: "web", JobName: "test-web", job: nodeVitestJob},
-		{Name: "Python", ID: "py", JobName: "test-py", job: pythonJob},
-		{Name: "Rust", ID: "rust", JobName: "test-rust", job: rustJob},
-		{Name: "Java", ID: "java", JobName: "test-java", job: javaJob},
-		{Name: "C#/.NET", ID: "dotnet", JobName: "test-dotnet", job: dotnetJob},
+		{Name: "Go", ID: "go", JobName: "test-go", Doc: "GO.md"},
+		{Name: "TypeScript/JavaScript", ID: "web", JobName: "test-web", Doc: "TYPESCRIPT.md"},
+		{Name: "Python", ID: "py", JobName: "test-py", Doc: "PYTHON.md"},
+		{Name: "Rust", ID: "rust", JobName: "test-rust", Doc: "RUST.md"},
+		{Name: "Java", ID: "java", JobName: "test-java", Doc: "JAVA.md"},
+		{Name: "C#/.NET", ID: "dotnet", JobName: "test-dotnet", Doc: "CSHARP.md"},
 	}
 	wf := workflow(langs)
 
@@ -86,6 +71,15 @@ func TestGeneratedWorkflowIsValidYAML(t *testing.T) {
 	}
 	if !strings.Contains(wf, "needs: [test-go, test-web, test-py, test-rust, test-java, test-dotnet]") {
 		t.Error("report job needs list is wrong")
+	}
+	// Stub jobs must point at the docs and NOT bake in framework commands.
+	if !strings.Contains(wf, "docs/GO.md") || !strings.Contains(wf, "docs/RUST.md") {
+		t.Error("stub jobs should link to the per-language docs")
+	}
+	for _, leaked := range []string{"vitest", "gotestsum", "cargo llvm-cov", "pytest", "mvn ", "dotnet test"} {
+		if strings.Contains(wf, leaked) {
+			t.Errorf("generated workflow should not bake in framework command %q", leaked)
+		}
 	}
 }
 

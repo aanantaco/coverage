@@ -12,11 +12,13 @@
 ## Emit the artifacts
 
 Add the logger package to your test project:
+
 ```bash
 dotnet add package JunitXml.TestLogger
 ```
 
 Run tests with Cobertura coverage and JUnit logging:
+
 ```bash
 dotnet test \
   --collect:"XPlat Code Coverage" \

@@ -8,6 +8,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Lint job (markdown & shell).** A `lint` CI job runs `markdownlint-cli2`
+  (config in `.markdownlint-cli2.yaml`) over the docs and `shellcheck` over any
+  tracked shell scripts. Existing Markdown lint findings were fixed.
 - **Per-commit release binaries (GoReleaser).** A `release` job runs on every
   merge to `main`, after build/test and the security scan pass, cross-compiling
   `coverage` (linux/macOS/Windows × amd64/arm64) in snapshot mode and uploading

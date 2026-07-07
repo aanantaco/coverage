@@ -8,7 +8,7 @@ This project includes code derived from third-party open-source software.
 and matching logic from [github.com/sabhiram/go-gitignore](https://github.com/sabhiram/go-gitignore).
 The original is distributed under the MIT License:
 
-```
+```text
 The MIT License (MIT)
 
 Copyright (c) 2015 Shaba Abhiram

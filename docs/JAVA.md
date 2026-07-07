@@ -14,6 +14,7 @@ JUnit tests via **Maven Surefire** or **Gradle**, with
 ## Emit the artifacts
 
 ### Maven (Surefire + JaCoCo)
+
 ```bash
 mvn test    # JaCoCo bound to the test phase produces target/site/jacoco/jacoco.xml
 python cover2cover.py target/site/jacoco/jacoco.xml > coverage-<id>.xml
@@ -23,6 +24,7 @@ cp target/surefire-reports/TEST-*.xml tests-<id>.xml   # single module
 ```
 
 ### Gradle
+
 ```bash
 ./gradlew test jacocoTestReport
 python cover2cover.py build/reports/jacoco/test/jacocoTestReport.xml > coverage-<id>.xml

@@ -1,0 +1,15 @@
+# markdownlint-cli2 configuration (https://github.com/DavidAnson/markdownlint-cli2)
+config:
+  default: true
+  # Line length: our tables, URLs, and code samples routinely exceed 80 cols.
+  MD013: false
+  # Allow repeated headings under different sections (e.g. the CHANGELOG's
+  # "### Added" / "### Changed" under each version).
+  MD024:
+    siblings_only: true
+globs:
+  - "**/*.md"
+ignores:
+  - "node_modules"
+  # Golden test fixtures, not documentation.
+  - "internal/render/testdata"

@@ -115,6 +115,31 @@ jobs:
           retention-days: 30
 
   # ==========================================================================
+  # Other lint (markdown & shell)
+  # ==========================================================================
+  lint:
+    name: Lint (markdown & shell)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Lint Markdown
+        # Config + ignores are in .markdownlint-cli2.yaml. Node is preinstalled
+        # on the runner.
+        run: npx --yes markdownlint-cli2@0.18.1
+
+      - name: Lint shell scripts
+        # shellcheck is preinstalled on ubuntu runners. Lints tracked shell
+        # scripts, if any.
+        run: |
+          files=$(git ls-files '*.sh' '*.bash')
+          if [ -n "$files" ]; then
+            echo "$files" | xargs shellcheck
+          else
+            echo "No shell scripts to lint."
+          fi
+
+  # ==========================================================================
   # Release binaries (per-commit)
   # ==========================================================================
   # Runs on every merge to main, after build/test and the security scan pass.

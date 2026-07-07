@@ -20,6 +20,7 @@ pytest \
 ```
 
 Plain `unittest`:
+
 ```bash
 pip install coverage
 coverage run -m pytest --junitxml=tests-<id>.xml   # or -m unittest

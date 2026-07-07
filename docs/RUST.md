@@ -26,12 +26,14 @@ cp target/nextest/ci/junit.xml tests-<id>.xml
 ```
 
 Enable JUnit for the nextest `ci` profile in `.config/nextest.toml`:
+
 ```toml
 [profile.ci.junit]
 path = "junit.xml"
 ```
 
 Alternatively, without nextest:
+
 ```bash
 cargo install cargo2junit
 cargo test -- -Z unstable-options --format json --report-time \

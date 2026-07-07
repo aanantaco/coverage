@@ -13,7 +13,9 @@ All three emit workspace-relative paths, so usually no `strip_prefix` is needed.
 ## Emit the artifacts
 
 ### Jest
+
 Requires the `jest-junit` dev dependency.
+
 ```bash
 JEST_JUNIT_OUTPUT_FILE=tests-<id>.xml \
   npx jest --coverage \
@@ -23,7 +25,9 @@ cp coverage/cobertura-coverage.xml coverage-<id>.xml
 ```
 
 ### Vitest
+
 Needs `@vitest/coverage-v8` (or `@vitest/coverage-istanbul`).
+
 ```bash
 npx vitest run --coverage \
   --coverage.reporter=cobertura \
@@ -33,6 +37,7 @@ cp coverage/cobertura-coverage.xml coverage-<id>.xml
 ```
 
 ### Mocha + nyc
+
 ```bash
 npx nyc --reporter=cobertura \
   npx mocha --reporter mocha-junit-reporter \

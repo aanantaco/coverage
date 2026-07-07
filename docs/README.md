@@ -60,6 +60,7 @@ To keep a workspace in the report before it has real tests, emit minimal XML:
 <?xml version="1.0"?>
 <coverage lines-valid="0" lines-covered="0"><packages/></coverage>
 ```
+
 ```xml
 <!-- tests-<id>.xml -->
 <?xml version="1.0" encoding="UTF-8"?>

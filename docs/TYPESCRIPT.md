@@ -45,6 +45,41 @@ npx nyc --reporter=cobertura \
 cp coverage/cobertura-coverage.xml coverage-<id>.xml
 ```
 
+## Count every source file (not just the imported ones)
+
+By default, V8/Istanbul only report coverage for files that a test **imported** —
+so a source file with no test is silently omitted and the percentage looks much
+higher than reality. Turn on all-files coverage with an `include` glob so every
+`src/**` file counts (untested ones as **0%**). The number drops sharply at
+first, but it's the *real* number, and it turns the report into a signal for
+"where are the test gaps."
+
+**Vitest** (`vitest.config.ts`):
+
+```ts
+export default defineConfig({
+  test: {
+    coverage: {
+      all: true,                 // include files no test imported
+      include: ['src/**'],       // scope to your source
+      exclude: ['**/*.d.ts', '**/*.stories.*', '**/*.test.*'],
+    },
+  },
+})
+```
+
+**Jest** (`jest.config.js`):
+
+```js
+module.exports = {
+  collectCoverageFrom: ['src/**/*.{ts,tsx,js,jsx}', '!**/*.d.ts', '!**/*.stories.*'],
+}
+```
+
+Then prune things that legitimately shouldn't count (type-only files, generated
+code, stories, fixtures) via those `exclude` globs or a repo-root
+`.coverageignore` — so the remaining 0% files are genuine gaps, not noise.
+
 ## Example config
 
 Coverage paths are relative to the workspace root (e.g. `src/thing/foo.ts`). In a

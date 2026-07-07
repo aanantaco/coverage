@@ -8,6 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **TypeScript/JS docs: count every source file.** `docs/TYPESCRIPT.md` and
+  `llms.txt` now explain how to enable all-files coverage (Vitest `all` +
+  `include: ['src/**']`, Jest `collectCoverageFrom`) so untested source files
+  count as 0% instead of being silently omitted — turning the report into a
+  real signal for where the test gaps are.
+
 - **`coverage init` subcommand.** Detects a repo's languages (Go, TypeScript/
   JavaScript, Rust, Python, Java, C#) and non-destructively scaffolds
   `.github/workflows/coverage.yml` (a complete report job plus framework-agnostic

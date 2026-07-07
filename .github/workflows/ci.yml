@@ -1,0 +1,179 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, test & self-report coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
+
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "These files need gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Install test tooling
+        # Both tools are pinned for reproducibility. gocover-cobertura v1.5.0
+        # requires Go >= 1.25, satisfied by the Go 1.26 toolchain above.
+        run: |
+          go install gotest.tools/gotestsum@v1.13.0
+          go install github.com/boumenot/gocover-cobertura@v1.5.0
+
+      # Produce Cobertura + JUnit artifacts for this module, using the same
+      # workspace-id convention the tool consumes: coverage-<id>.xml / tests-<id>.xml.
+      - name: Run tests with coverage
+        run: |
+          gotestsum --junitfile tests-coverage.xml --format pkgname \
+            -- -coverprofile=coverage.out -covermode=atomic -count=1 ./...
+          gocover-cobertura < coverage.out > coverage-coverage.xml
+
+      # Dogfood: build the app and use it to render this repo's own coverage
+      # into the run's Summary tab.
+      - name: Build coverage
+        run: go build -o "$RUNNER_TEMP/coverage" ./cmd/coverage
+
+      - name: Coverage summary
+        run: |
+          mkdir -p ./coverage-artifacts
+          mv coverage-coverage.xml tests-coverage.xml ./coverage-artifacts/
+          "$RUNNER_TEMP/coverage" \
+            --input ./coverage-artifacts \
+            --ignore .coverageignore \
+            --output "$GITHUB_STEP_SUMMARY"
+
+  # ==========================================================================
+  # Security
+  # ==========================================================================
+  security-scan:
+    name: Security Scan (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run Trivy + render markdown report
+        id: trivy
+        run: |
+          mkdir -p trivy-report
+          set +e
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            aquasec/trivy:latest \
+            filesystem \
+            --exit-code 1 \
+            --severity MEDIUM,HIGH,CRITICAL \
+            --scanners vuln,secret,misconfig \
+            --ignorefile .trivyignore \
+            --skip-version-check \
+            --format table \
+            --output trivy-report/trivy-report.md \
+            .
+          trivy_exit=$?
+          set -e
+          {
+            echo "## Trivy Security Scan"
+            echo ""
+            echo "Severities: MEDIUM, HIGH, CRITICAL — scanners: vuln, secret, misconfig"
+            echo ""
+            echo '```'
+            cat trivy-report/trivy-report.md
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$trivy_exit"
+
+      - name: Upload Trivy report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-report
+          path: trivy-report/
+          if-no-files-found: warn
+          retention-days: 30
+
+  # ==========================================================================
+  # Other lint (markdown & shell)
+  # ==========================================================================
+  lint:
+    name: Lint (markdown & shell)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Lint Markdown
+        # Config + ignores are in .markdownlint-cli2.yaml. Node is preinstalled
+        # on the runner.
+        run: npx --yes markdownlint-cli2@0.18.1
+
+      - name: Lint shell scripts
+        # shellcheck is preinstalled on ubuntu runners. Lints tracked shell
+        # scripts, if any.
+        run: |
+          files=$(git ls-files '*.sh' '*.bash')
+          if [ -n "$files" ]; then
+            echo "$files" | xargs shellcheck
+          else
+            echo "No shell scripts to lint."
+          fi
+
+  # ==========================================================================
+  # Release binaries (per-commit)
+  # ==========================================================================
+  # Runs on every merge to main, after build/test and the security scan pass.
+  # GoReleaser cross-compiles the `coverage` binary (snapshot mode, keyed to the
+  # commit SHA) and uploads the archives + checksums as a workflow artifact.
+  # No git tags and no GitHub Release — consumers pin by commit SHA.
+  release:
+    name: Build release binaries
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build, security-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
+
+      - name: Build binaries (GoReleaser snapshot)
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --snapshot --clean
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-binaries-${{ github.sha }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
+          if-no-files-found: error
+          retention-days: 90

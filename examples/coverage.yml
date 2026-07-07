@@ -1,0 +1,101 @@
+# Example consumer workflow — copy this into `.github/workflows/coverage.yml`
+# in your own repository and adapt the test jobs to your projects.
+#
+# The pattern is always the same:
+#   1. Each test job produces `coverage-<id>.xml` (Cobertura) and
+#      `tests-<id>.xml` (JUnit), then uploads them as artifacts.
+#   2. One `report` job downloads every artifact into a single directory and
+#      runs the `coverage` tool once.
+#
+# See docs/ for the exact commands per language / test framework.
+
+name: Coverage
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # ---- Example TypeScript job (Vitest) -----------------------------------
+  test-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+
+      - name: Test with coverage
+        run: |
+          npx vitest run --coverage \
+            --coverage.reporter=cobertura \
+            --reporter=default --reporter=junit \
+            --outputFile.junit=tests-web.xml
+          cp coverage/cobertura-coverage.xml coverage-web.xml
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: coverage-web, path: coverage-web.xml, if-no-files-found: warn }
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: tests-web, path: tests-web.xml, if-no-files-found: warn }
+
+  # ---- Example Go job -----------------------------------------------------
+  test-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with: { go-version: "1.26" }
+
+      - name: Test with coverage
+        run: |
+          go install gotest.tools/gotestsum@latest
+          go install github.com/boumenot/gocover-cobertura@latest
+          gotestsum --junitfile tests-api.xml --format pkgname \
+            -- -coverprofile=coverage.out -covermode=atomic ./...
+          gocover-cobertura < coverage.out > coverage-api.xml
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: coverage-api, path: coverage-api.xml, if-no-files-found: warn }
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: tests-api, path: tests-api.xml, if-no-files-found: warn }
+
+  # ---- Aggregate & report -------------------------------------------------
+  report:
+    needs: [test-web, test-api]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v8
+        with: { pattern: coverage-*, path: ./cov, merge-multiple: true }
+      - name: Download test-count artifacts
+        uses: actions/download-artifact@v8
+        with: { pattern: tests-*, path: ./cov, merge-multiple: true }
+
+      # Option A — the composite Action (simplest). Pin to a commit SHA; the
+      # action builds from its own source at that SHA, so the pin selects the
+      # exact tool version.
+      - uses: aanantaco/coverage@<commit-sha>
+        with:
+          input: ./cov
+          output: $GITHUB_STEP_SUMMARY
+          # ignore: .coverageignore     # optional
+          # config: coverage.yaml       # optional
+          # baseline: baseline.json     # optional, for regression Δ columns
+          # fail-on-drop: "0.5"         # optional, fail on >0.5pp total drop
+
+      # Option B — go install (uncomment instead of Option A)
+      # - uses: actions/setup-go@v6
+      #   with: { go-version: "1.26" }
+      # - run: go install github.com/aanantaco/coverage/cmd/coverage@latest
+      # - run: coverage --input ./cov --output "$GITHUB_STEP_SUMMARY"

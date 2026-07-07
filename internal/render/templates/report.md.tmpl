@@ -1,0 +1,27 @@
+## Test Coverage
+
+{{if .Regressions}}> ⚠️ **Coverage decreased** in {{len .Regressions}} {{pluralize (len .Regressions) "workspace" "workspaces"}}:
+{{range .Regressions}}> - `{{.DisplayName}}`: {{fmtPct .OldPercent}} → {{fmtPct .NewPercent}} (▼ {{fmtDrop .DropPP}}pp)
+{{end}}
+{{end}}### Summary
+
+| Workspace | Tests | Lines | % |{{if .HasBaseline}} Δ |{{end}} Branches | % |{{if .HasBaseline}} Δ |{{end}}
+|---|---|---|---|{{if .HasBaseline}}---|{{end}}---|---|{{if .HasBaseline}}---|{{end}}
+{{range .Summary -}}
+{{if .IsTotal}}| **Total** | **{{.Tests}}** | {{linesCell .}} | **{{linePct .}}** |{{if $.HasBaseline}} {{deltaLine .}} |{{end}} {{branchesCell .}} | {{branchPctBold .}} |{{if $.HasBaseline}} {{deltaBranch .}} |{{end}}
+{{else}}| {{.Label}} | {{.Tests}} | {{linesCell .}} | {{linePct .}} |{{if $.HasBaseline}} {{deltaLine .}} |{{end}} {{branchesCell .}} | {{branchPct .}} |{{if $.HasBaseline}} {{deltaBranch .}} |{{end}}
+{{end -}}
+{{end}}
+### Breakdown by folder
+
+| Workspace / Folder | Lines | % |{{if .HasBaseline}} Δ |{{end}} Branches | % |{{if .HasBaseline}} Δ |{{end}}
+|---|---|---|{{if .HasBaseline}}---|{{end}}---|---|{{if .HasBaseline}}---|{{end}}
+{{range .Breakdown -}}
+{{if .IsFolder}}| └ {{.Label}} | {{linesCell .}} | {{linePct .}} |{{if $.HasBaseline}} {{deltaLine .}} |{{end}} {{branchesCell .}} | {{branchPct .}} |{{if $.HasBaseline}} {{deltaBranch .}} |{{end}}
+{{else}}| **{{.Label}}** | {{linesCell .}} | {{linePct .}} |{{if $.HasBaseline}} {{deltaLine .}} |{{end}} {{branchesCell .}} | {{branchPct .}} |{{if $.HasBaseline}} {{deltaBranch .}} |{{end}}
+{{end -}}
+{{end}}
+{{if .Removed}}_Removed since baseline: {{join .Removed ", "}}_
+
+{{end}}{{if .IgnoreFileLoaded}}_Excluded paths from `.coverageignore`: {{.ExcludedFiles}} files_
+{{end}}

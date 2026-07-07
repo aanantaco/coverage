@@ -1,0 +1,37 @@
+# Paths excluded from aggregated test coverage reporting.
+# Standard gitignore syntax (parsed by github.com/sabhiram/go-gitignore).
+#
+# Patterns are matched against repo-root-relative paths. For a workspace with a
+# configured `prefix` (see coverage.yaml), that prefix is prepended to each
+# file before matching, so a single repo-root ignore file can target any
+# workspace's files.
+
+# Generated code
+**/store/*.go
+**/dist/**
+**/.next/**
+**/build/**
+
+# Test files themselves
+**/*_test.go
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/__mocks__/**
+**/__tests__/**
+
+# Vendored / third-party
+**/node_modules/**
+**/vendor/**
+
+# Test helpers, generated mocks, and CLI entrypoints (not unit-testable)
+**/testutil/**
+**/cmd/**
+
+# Migrations and SQLC-generated code (no business logic)
+shared/migration/**
+schemata/**
+services/thinger/internal/store/**
+services/thinger/schemata/**
+services/thinger/internal/database/**

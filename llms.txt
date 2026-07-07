@@ -34,6 +34,11 @@ files is language- and version-specific (see the recipes) and changes over time.
 4. `coverage init` scaffolds this structure (report job + per-language test-job
    stubs); fill each stub's TODO using the matching recipe.
 
+Tip: configure each tool to count *every* source file, not just the ones a test
+imported (e.g. Vitest/Jest `all`/`collectCoverageFrom` over `src/**`, JS coverage
+defaults to imported-only). It drops the number but makes it the real one and
+surfaces untested files as 0% — see the per-language recipes.
+
 ## Per-language recipes
 
 - Go: https://github.com/aanantaco/coverage/blob/main/docs/GO.md

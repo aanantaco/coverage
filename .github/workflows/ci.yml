@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, test & self-report coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.24"
+          cache: true
+
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "These files need gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Install test tooling
+        # gocover-cobertura is pinned to the last release that supports Go 1.24
+        # (v1.5.0 requires Go >= 1.25). gotestsum is pinned for reproducibility.
+        run: |
+          go install gotest.tools/gotestsum@v1.13.0
+          go install github.com/boumenot/gocover-cobertura@v1.4.0
+
+      # Produce Cobertura + JUnit artifacts for this module, using the same
+      # workspace-id convention the tool consumes: coverage-<id>.xml / tests-<id>.xml.
+      - name: Run tests with coverage
+        run: |
+          gotestsum --junitfile tests-coverage-report.xml --format pkgname \
+            -- -coverprofile=coverage.out -covermode=atomic -count=1 ./...
+          gocover-cobertura < coverage.out > coverage-coverage-report.xml
+
+      # Dogfood: build the app and use it to render this repo's own coverage
+      # into the run's Summary tab.
+      - name: Build coverage-report
+        run: go build -o "$RUNNER_TEMP/coverage-report" ./cmd/coverage-report
+
+      - name: Coverage summary
+        run: |
+          mkdir -p ./coverage-artifacts
+          mv coverage-coverage-report.xml tests-coverage-report.xml ./coverage-artifacts/
+          "$RUNNER_TEMP/coverage-report" \
+            --input ./coverage-artifacts \
+            --ignore .coverageignore \
+            --output "$GITHUB_STEP_SUMMARY"

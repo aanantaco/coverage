@@ -16,6 +16,9 @@
 coverage.*
 *.coverprofile
 profile.cov
+# ...but this project's own config and examples are source, not artifacts.
+!coverage.yaml
+!coverage.yaml.example
 
 # Dependency directories (remove the comment below to include it)
 # vendor/

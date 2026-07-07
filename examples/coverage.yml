@@ -7,7 +7,7 @@
 #   2. One `report` job downloads every artifact into a single directory and
 #      runs the `coverage` tool once.
 #
-# See docs/frameworks.md for the exact commands per language / test framework.
+# See docs/ for the exact commands per language / test framework.
 
 name: Coverage
 

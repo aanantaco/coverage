@@ -22,13 +22,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Documentation site** under `docs/` with an index and per-language how-to
   guides (Go, TypeScript/JS, Rust, Python, Java, C#) — each listing supported
   test frameworks, artifact commands, and an example config — plus a
-  [regression guide](docs/regression.md) for coverage deltas across runs. The
+  [regression guide](docs/REGRESSION.md) for coverage deltas across runs. The
   README is trimmed to an overview with a supported-languages table linking into
   `docs/`.
 - **Example consumer workflow** at `examples/coverage.yml`.
 
 ### Changed
 
+- **Docs filenames uppercased; `docs/index.md` → `docs/README.md`** so the
+  `docs/` folder auto-renders its index on GitHub. Per-language guides are now
+  `docs/GO.md`, `docs/TYPESCRIPT.md`, etc.
 - **Composite Action now builds from its own source at the pinned ref** instead
   of `go install …@latest`, so pinning the Action by commit SHA
   (`uses: aanantaco/coverage@<sha>`) selects the exact tool version. The

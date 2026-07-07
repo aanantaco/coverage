@@ -31,14 +31,14 @@ produces two files: `coverage-<id>.xml` and `tests-<id>.xml`.
 
 | Language | Coverage → Cobertura | Tests → JUnit | Guide |
 |---|---|---|---|
-| Go | `gocover-cobertura` | `gotestsum` | [go.md](./docs/go.md) |
-| TypeScript / JS | Jest · Vitest · nyc | jest-junit · vitest · mocha-junit-reporter | [typescript.md](./docs/typescript.md) |
-| Rust | `cargo-llvm-cov --cobertura` | `cargo-nextest` · `cargo2junit` | [rust.md](./docs/rust.md) |
-| Python | `pytest --cov ... --cov-report=xml` | `pytest --junitxml` | [python.md](./docs/python.md) |
-| Java | JaCoCo (→ Cobertura) | Surefire / Gradle | [java.md](./docs/java.md) |
-| C# / .NET | coverlet (cobertura) | JunitXml.TestLogger | [csharp.md](./docs/csharp.md) |
+| Go | `gocover-cobertura` | `gotestsum` | [GO.md](./docs/GO.md) |
+| TypeScript / JS | Jest · Vitest · nyc | jest-junit · vitest · mocha-junit-reporter | [TYPESCRIPT.md](./docs/TYPESCRIPT.md) |
+| Rust | `cargo-llvm-cov --cobertura` | `cargo-nextest` · `cargo2junit` | [RUST.md](./docs/RUST.md) |
+| Python | `pytest --cov ... --cov-report=xml` | `pytest --junitxml` | [PYTHON.md](./docs/PYTHON.md) |
+| Java | JaCoCo (→ Cobertura) | Surefire / Gradle | [JAVA.md](./docs/JAVA.md) |
+| C# / .NET | coverlet (cobertura) | JunitXml.TestLogger | [CSHARP.md](./docs/CSHARP.md) |
 
-Any other tool that produces Cobertura + JUnit works too — see [`docs/`](./docs/index.md).
+Any other tool that produces Cobertura + JUnit works too — see [`docs/`](./docs/README.md).
 
 ## Install
 
@@ -139,7 +139,7 @@ report:
 `prefix`/`strip_prefix` bridge emitter paths to a repo-root ignore file: the tool
 computes `rel = strip_prefix removed from filename` (used for folder grouping)
 and `full = prefix + rel` (matched against `.coverageignore`). Go module import
-paths are the usual reason to set `strip_prefix` — see [docs/go.md](./docs/go.md).
+paths are the usual reason to set `strip_prefix` — see [docs/GO.md](./docs/GO.md).
 
 ## Coverage deltas across runs
 
@@ -147,12 +147,12 @@ Emit a baseline with `--emit-json coverage-summary.json`, then pass it back on a
 later run with `--baseline` to get Δ columns, a "coverage decreased" callout, and
 `new`/removed markers; add `--fail-on-drop 0.5` to fail on a total drop. The full
 recipe (default-branch cache, artifact, or committed baseline) is in
-[docs/regression.md](./docs/regression.md).
+[docs/REGRESSION.md](./docs/REGRESSION.md).
 
 ## Documentation
 
 Full docs — per-language guides, the regression guide, and references — live in
-[`docs/`](./docs/index.md).
+[`docs/`](./docs/README.md).
 
 ## Development
 

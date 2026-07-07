@@ -19,16 +19,16 @@ Each project produces two files in a shared directory:
 Each guide lists the supported test frameworks, the exact commands to emit the
 two artifacts, and an example `coverage.yaml` block.
 
-- [Go](./go.md)
-- [TypeScript / JavaScript](./typescript.md)
-- [Rust](./rust.md)
-- [Python](./python.md)
-- [Java](./java.md)
-- [C# / .NET](./csharp.md)
+- [Go](./GO.md)
+- [TypeScript / JavaScript](./TYPESCRIPT.md)
+- [Rust](./RUST.md)
+- [Python](./PYTHON.md)
+- [Java](./JAVA.md)
+- [C# / .NET](./CSHARP.md)
 
 ## Guides
 
-- [Coverage deltas across runs (regression detection)](./regression.md)
+- [Coverage deltas across runs (regression detection)](./REGRESSION.md)
 
 ## Reference
 

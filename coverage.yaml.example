@@ -1,0 +1,49 @@
+# coverage.yaml — all fields are optional; shown here with their defaults.
+#
+# The file itself is optional. With no coverage.yaml present the tool works with
+# sensible defaults: workspaces are auto-detected from artifact filenames, no
+# prefix stripping is done, the folder-group depth is 3, and no filtering is
+# applied unless a .coverageignore is found or passed.
+#
+# A file that IS present but malformed (bad YAML, unknown key, invalid value) is
+# a hard error — there are no silent fallbacks.
+
+# How folder groups are truncated in the breakdown table.
+folder_group_depth: 3
+
+# Path to the ignore file (gitignore syntax), relative to the repo root.
+# If unset, the tool uses ".coverageignore" when that file exists, else no
+# filtering. A --ignore CLI flag overrides this.
+ignore_file: .coverageignore
+
+# Regression detection (optional block).
+baseline:
+  # Where to read the previous run's summary JSON from. Unset => regression
+  # detection is disabled (report-only).
+  path: .coverage-baseline.json
+  # Fail the process (exit non-zero) if total line coverage drops by more than
+  # this many percentage points. Unset => never fail, just annotate.
+  # fail_on_drop: 0.5
+
+# Fallback display rule for workspaces without an explicit display_name below.
+#   id           => use the workspace id verbatim (default)
+#   shared-slash => map a leading "shared-" to "shared/" (original-tool compat)
+display_from: id
+
+# Per-workspace overrides. The KEY is the workspace id (the <id> in
+# coverage-<id>.xml). Every field here is optional per workspace.
+workspaces:
+  compliance-api:
+    # Display label in the report. Default: derived from id via display_from.
+    display_name: services/compliance-api
+    # Prefix prepended to each class filename before matching .coverageignore,
+    # so a repo-root ignore file can target this workspace's files.
+    prefix: services/compliance-api/
+    # Prefix stripped from each class filename BEFORE the prefix is applied.
+    # Use for Go emitters (gocover-cobertura) that write full module import
+    # paths like github.com/acme/monorepo/services/compliance-api/foo.go.
+    strip_prefix: github.com/acme/monorepo/services/compliance-api/
+
+  shared-awards:
+    display_name: shared/awards
+    prefix: shared/awards/

@@ -1,0 +1,75 @@
+name: Coverage Report
+description: >-
+  Aggregate Cobertura coverage and JUnit test-result artifacts into a single
+  Markdown summary for the GitHub Actions run, with optional regression
+  detection against a baseline.
+author: aanantaco
+
+branding:
+  icon: bar-chart-2
+  color: green
+
+inputs:
+  input:
+    description: Directory containing coverage-*.xml and tests-*.xml artifacts.
+    required: true
+  output:
+    description: >-
+      Output path. Use "-" for stdout, or $GITHUB_STEP_SUMMARY (default) to
+      write to the run's Summary tab.
+    required: false
+    default: $GITHUB_STEP_SUMMARY
+  ignore:
+    description: Path to a .coverageignore file (gitignore syntax). Optional.
+    required: false
+    default: ""
+  config:
+    description: Path to coverage.yaml. Defaults to ./coverage.yaml if present.
+    required: false
+    default: ""
+  baseline:
+    description: Path to a baseline coverage-summary.json for regression detection.
+    required: false
+    default: ""
+  fail-on-drop:
+    description: >-
+      Fail the job if total line coverage drops by more than this many
+      percentage points. Leave empty to only annotate.
+    required: false
+    default: ""
+  emit-json:
+    description: Also write a machine-readable coverage-summary.json to this path.
+    required: false
+    default: ""
+  go-version:
+    description: Go version used to install the tool.
+    required: false
+    default: "1.24"
+  version:
+    description: Version (git ref/tag) of the coverage-report tool to install.
+    required: false
+    default: latest
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: false
+
+    - name: Install coverage-report
+      shell: bash
+      run: go install github.com/aanantaco/coverage/cmd/coverage-report@${{ inputs.version }}
+
+    - name: Render coverage summary
+      shell: bash
+      run: |
+        args=(--input "${{ inputs.input }}" --output "${{ inputs.output }}")
+        [ -n "${{ inputs.ignore }}" ]       && args+=(--ignore "${{ inputs.ignore }}")
+        [ -n "${{ inputs.config }}" ]       && args+=(--config "${{ inputs.config }}")
+        [ -n "${{ inputs.baseline }}" ]     && args+=(--baseline "${{ inputs.baseline }}")
+        [ -n "${{ inputs.fail-on-drop }}" ] && args+=(--fail-on-drop "${{ inputs.fail-on-drop }}")
+        [ -n "${{ inputs.emit-json }}" ]    && args+=(--emit-json "${{ inputs.emit-json }}")
+        coverage-report "${args[@]}"

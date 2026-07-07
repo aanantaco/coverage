@@ -40,6 +40,10 @@ produces two files: `coverage-<id>.xml` and `tests-<id>.xml`.
 
 Any other tool that produces Cobertura + JUnit works too — see [`docs/`](./docs/README.md).
 
+New to it? **`coverage init`** detects your languages and scaffolds the workflow
+wiring + config non-destructively — see [docs/INIT.md](./docs/INIT.md). Setting
+this up with an AI assistant? Point it at [`llms.txt`](./llms.txt).
+
 ## Install
 
 ```bash

@@ -8,6 +8,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`coverage init` subcommand.** Detects a repo's languages (Go, TypeScript/
+  JavaScript, Rust, Python, Java, C#) and non-destructively scaffolds
+  `.github/workflows/coverage.yml` (a complete report job plus framework-agnostic
+  test-job stubs that link to the per-language docs), a starter `.coverageignore`,
+  and a commented `coverage.yaml`. Never overwrites existing files; `--dry-run`
+  previews. Volatile per-framework commands are deliberately left to the docs
+  rather than baked into the tool.
+- **`llms.txt`** at the repo root — a concise, LLM-oriented map (the stable
+  two-file contract plus links to the per-language recipes) so AI assistants can
+  wire coverage into a repo from durable docs.
 - **Lint job (markdown & shell).** A `lint` CI job runs `markdownlint-cli2`
   (config in `.markdownlint-cli2.yaml`) over the docs and `shellcheck` over any
   tracked shell scripts. Existing Markdown lint findings were fixed.

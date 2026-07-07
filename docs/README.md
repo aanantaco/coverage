@@ -28,6 +28,7 @@ two artifacts, and an example `coverage.yaml` block.
 
 ## Guides
 
+- [`coverage init` — scaffold a repo](./INIT.md)
 - [Coverage deltas across runs (regression detection)](./REGRESSION.md)
 
 ## Reference

@@ -1,6 +1,6 @@
-# coverage-report
+# coverage
 
-A single Go binary that aggregates **Cobertura** coverage XML and **JUnit**
+A single Go binary (`coverage`) that aggregates **Cobertura** coverage XML and **JUnit**
 test-result XML from every project in a repo into one **Markdown summary** for
 the GitHub Actions "Summary" tab — with optional **regression detection**
 against a baseline.
@@ -31,7 +31,7 @@ only two files per workspace: `coverage-<id>.xml` and `tests-<id>.xml`.
 ## Install
 
 ```bash
-go install github.com/aanantaco/coverage/cmd/coverage-report@latest
+go install github.com/aanantaco/coverage/cmd/coverage@latest
 ```
 
 Or use the composite GitHub Action (`aanantaco/coverage@v1`) — see below.
@@ -39,7 +39,7 @@ Or use the composite GitHub Action (`aanantaco/coverage@v1`) — see below.
 ## Usage
 
 ```bash
-coverage-report --input ./coverage-artifacts --output "$GITHUB_STEP_SUMMARY"
+coverage --input ./coverage-artifacts --output "$GITHUB_STEP_SUMMARY"
 ```
 
 | Flag | Default | Meaning |
@@ -175,10 +175,14 @@ report:
 
     # Option B — go install
     # - uses: actions/setup-go@v6
-    #   with: { go-version: '1.24' }
-    # - run: go install github.com/aanantaco/coverage/cmd/coverage-report@latest
-    # - run: coverage-report --input ./cov --output "$GITHUB_STEP_SUMMARY"
+    #   with: { go-version: '1.26' }
+    # - run: go install github.com/aanantaco/coverage/cmd/coverage@latest
+    # - run: coverage --input ./cov --output "$GITHUB_STEP_SUMMARY"
 ```
+
+A ready-to-copy consumer workflow lives at [`examples/coverage.yml`](./examples/coverage.yml),
+and per-language/framework artifact setup is documented in
+[`docs/frameworks.md`](./docs/frameworks.md).
 
 ## Regression detection
 

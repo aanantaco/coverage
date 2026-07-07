@@ -20,7 +20,7 @@ import (
 const SchemaVersion = 1
 
 // GeneratedFrom identifies the producer in the summary JSON.
-const GeneratedFrom = "coverage-report"
+const GeneratedFrom = "coverage"
 
 // Totals is a set of line/branch counts.
 type Totals struct {

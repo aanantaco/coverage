@@ -6,8 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Example consumer workflow** at `examples/coverage.yml` and a per-language /
+  per-test-framework artifact-setup guide at `docs/frameworks.md`.
+
 ### Changed
 
+- **Renamed the binary from `coverage-report` to `coverage`.** Install and run
+  paths are now `go install github.com/aanantaco/coverage/cmd/coverage@latest`
+  and `coverage …`. The `generated_from` field in the summary JSON is now
+  `"coverage"`.
 - **Dropped the `github.com/sabhiram/go-gitignore` dependency.** `.coverageignore`
   matching is now implemented in-repo (`internal/ignore/gitignore.go`) as a
   dependency-free port of that library, preserving its exact matching semantics.
@@ -42,7 +51,7 @@ regression detection.
   markers, and a removed-workspace note. `--fail-on-drop` (or
   `baseline.fail_on_drop`) exits non-zero on a total line-coverage regression,
   after the report is written.
-- **Distribution.** `go install github.com/aanantaco/coverage/cmd/coverage-report@latest`
+- **Distribution.** `go install github.com/aanantaco/coverage/cmd/coverage@latest`
   and a composite GitHub Action (`action.yml`).
 - **Examples.** `.coverageignore.example` and `coverage.yaml.example`.
 

@@ -1,0 +1,6 @@
+# Paths excluded from this repo's own aggregated coverage report.
+# Standard gitignore syntax (parsed by github.com/sabhiram/go-gitignore).
+
+# CLI entrypoint: thin flag wiring around internal/app, exercised via the app
+# package's end-to-end tests rather than unit tests.
+cmd/**

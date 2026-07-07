@@ -1,0 +1,8 @@
+# Trivy ignore file — suppress specific findings for the security scan.
+# https://trivy.dev/latest/docs/configuration/filtering/#by-finding-ids
+#
+# One finding ID per line (CVE, secret rule ID, or misconfiguration ID),
+# optionally with an expiry date, e.g.:
+#   CVE-2023-1234 exp:2026-12-31
+#
+# Keep this file curated — every entry is a knowingly accepted risk.

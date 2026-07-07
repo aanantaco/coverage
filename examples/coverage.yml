@@ -82,8 +82,10 @@ jobs:
         uses: actions/download-artifact@v8
         with: { pattern: tests-*, path: ./cov, merge-multiple: true }
 
-      # Option A — the composite Action (simplest)
-      - uses: aanantaco/coverage@v1
+      # Option A — the composite Action (simplest). Pin to a commit SHA; the
+      # action builds from its own source at that SHA, so the pin selects the
+      # exact tool version.
+      - uses: aanantaco/coverage@<commit-sha>
         with:
           input: ./cov
           output: $GITHUB_STEP_SUMMARY

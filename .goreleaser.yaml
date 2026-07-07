@@ -1,0 +1,43 @@
+# GoReleaser configuration (https://goreleaser.com).
+# The CI workflow runs `goreleaser release --snapshot --clean` on each merge to
+# main and uploads dist/ as a workflow artifact — no tags, no GitHub Release;
+# archives are keyed to the commit SHA. Validate locally with:
+#   goreleaser check
+#   goreleaser release --snapshot --clean
+version: 2
+
+project_name: coverage
+
+builds:
+  - id: coverage
+    main: ./cmd/coverage
+    binary: coverage
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: coverage
+    formats: ["tar.gz"]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    format_overrides:
+      - goos: windows
+        formats: ["zip"]
+
+checksum:
+  name_template: checksums.txt
+
+# No tags are cut, so snapshot builds key the version to the commit SHA. This
+# flows into the archive name_template ({{ .Version }}).
+snapshot:
+  version_template: "0.0.0-{{ .ShortCommit }}"

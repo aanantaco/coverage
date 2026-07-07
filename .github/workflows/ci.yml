@@ -113,3 +113,42 @@ jobs:
           path: trivy-report/
           if-no-files-found: warn
           retention-days: 30
+
+  # ==========================================================================
+  # Release binaries (per-commit)
+  # ==========================================================================
+  # Runs on every merge to main, after build/test and the security scan pass.
+  # GoReleaser cross-compiles the `coverage` binary (snapshot mode, keyed to the
+  # commit SHA) and uploads the archives + checksums as a workflow artifact.
+  # No git tags and no GitHub Release — consumers pin by commit SHA.
+  release:
+    name: Build release binaries
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build, security-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
+
+      - name: Build binaries (GoReleaser snapshot)
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --snapshot --clean
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-binaries-${{ github.sha }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
+          if-no-files-found: error
+          retention-days: 90

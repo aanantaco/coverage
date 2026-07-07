@@ -42,13 +42,9 @@ inputs:
     required: false
     default: ""
   go-version:
-    description: Go version used to install the tool.
+    description: Go version used to build the tool.
     required: false
     default: "1.26"
-  version:
-    description: Version (git ref/tag) of the coverage tool to install.
-    required: false
-    default: latest
 
 runs:
   using: composite
@@ -59,9 +55,12 @@ runs:
         go-version: ${{ inputs.go-version }}
         cache: false
 
-    - name: Install coverage
+    # Build from THIS action's own checked-out source, so pinning the action by
+    # commit SHA (uses: aanantaco/coverage@<sha>) pins the exact tool version.
+    - name: Build coverage
       shell: bash
-      run: go install github.com/aanantaco/coverage/cmd/coverage@${{ inputs.version }}
+      working-directory: ${{ github.action_path }}
+      run: go build -o "${{ runner.temp }}/coverage" ./cmd/coverage
 
     - name: Render coverage summary
       shell: bash
@@ -72,4 +71,4 @@ runs:
         [ -n "${{ inputs.baseline }}" ]     && args+=(--baseline "${{ inputs.baseline }}")
         [ -n "${{ inputs.fail-on-drop }}" ] && args+=(--fail-on-drop "${{ inputs.fail-on-drop }}")
         [ -n "${{ inputs.emit-json }}" ]    && args+=(--emit-json "${{ inputs.emit-json }}")
-        coverage "${args[@]}"
+        "${{ runner.temp }}/coverage" "${args[@]}"

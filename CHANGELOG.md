@@ -8,6 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Per-commit release binaries (GoReleaser).** A `release` job runs on every
+  merge to `main`, after build/test and the security scan pass, cross-compiling
+  `coverage` (linux/macOS/Windows × amd64/arm64) in snapshot mode and uploading
+  the archives + `checksums.txt` as a workflow artifact (`coverage-binaries-<sha>`).
+  No git tags and no GitHub Release — archives are keyed to the commit SHA and
+  consumers pin by SHA. Config in `.goreleaser.yaml`.
 - **HTML report output.** `--format html` (or an `.html`/`.htm` `--output`)
   renders a self-contained, theme-aware HTML page. Both Markdown and HTML are
   now rendered from embedded templates (`internal/render/templates/report.md.tmpl`
@@ -23,6 +29,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Composite Action now builds from its own source at the pinned ref** instead
+  of `go install …@latest`, so pinning the Action by commit SHA
+  (`uses: aanantaco/coverage@<sha>`) selects the exact tool version. The
+  `version` input was removed.
 - **Renamed the binary from `coverage-report` to `coverage`.** Install and run
   paths are now `go install github.com/aanantaco/coverage/cmd/coverage@latest`
   and `coverage …`. The `generated_from` field in the summary JSON is now

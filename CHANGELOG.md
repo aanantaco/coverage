@@ -8,8 +8,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **Example consumer workflow** at `examples/coverage.yml` and a per-language /
-  per-test-framework artifact-setup guide at `docs/frameworks.md`.
+- **Documentation site** under `docs/` with an index and per-language how-to
+  guides (Go, TypeScript/JS, Rust, Python, Java, C#) — each listing supported
+  test frameworks, artifact commands, and an example config — plus a
+  [regression guide](docs/regression.md) for coverage deltas across runs. The
+  README is trimmed to an overview with a supported-languages table linking into
+  `docs/`.
+- **Example consumer workflow** at `examples/coverage.yml`.
 
 ### Changed
 

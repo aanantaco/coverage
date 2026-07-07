@@ -34,12 +34,12 @@ baseline:
   fail_on_drop: 0.5
 display_from: shared-slash
 workspaces:
-  compliance-api:
-    display_name: services/compliance-api
-    prefix: services/compliance-api/
-    strip_prefix: github.com/acme/monorepo/services/compliance-api/
-  shared-awards:
-    prefix: shared/awards/
+  thingy:
+    display_name: services/thingy
+    prefix: services/thingy/
+    strip_prefix: github.com/acme/monorepo/services/thingy/
+  shared-widget:
+    prefix: shared/widget/
 `)
 	c, err := Load(path)
 	if err != nil {
@@ -54,8 +54,8 @@ workspaces:
 	if c.Baseline.FailOnDrop == nil || *c.Baseline.FailOnDrop != 0.5 {
 		t.Errorf("fail_on_drop = %v", c.Baseline.FailOnDrop)
 	}
-	ws := c.Workspaces["compliance-api"]
-	if ws.StripPrefix != "github.com/acme/monorepo/services/compliance-api/" {
+	ws := c.Workspaces["thingy"]
+	if ws.StripPrefix != "github.com/acme/monorepo/services/thingy/" {
 		t.Errorf("strip_prefix = %q", ws.StripPrefix)
 	}
 }
@@ -106,12 +106,12 @@ func TestDisplayName(t *testing.T) {
 	c := Default()
 	c.DisplayFrom = "shared-slash"
 	c.Workspaces = map[string]Workspace{
-		"compliance-api": {DisplayName: "services/compliance-api"},
+		"thingy": {DisplayName: "services/thingy"},
 	}
-	if got := c.DisplayName("compliance-api"); got != "services/compliance-api" {
+	if got := c.DisplayName("thingy"); got != "services/thingy" {
 		t.Errorf("explicit display_name = %q", got)
 	}
-	if got := c.DisplayName("shared-awards"); got != "shared/awards" {
+	if got := c.DisplayName("shared-widget"); got != "shared/widget" {
 		t.Errorf("shared-slash = %q", got)
 	}
 	if got := c.DisplayName("plain"); got != "plain" {
@@ -119,7 +119,7 @@ func TestDisplayName(t *testing.T) {
 	}
 
 	c.DisplayFrom = "id"
-	if got := c.DisplayName("shared-awards"); got != "shared-awards" {
+	if got := c.DisplayName("shared-widget"); got != "shared-widget" {
 		t.Errorf("id rule = %q", got)
 	}
 }

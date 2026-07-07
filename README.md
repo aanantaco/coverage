@@ -1,12 +1,13 @@
 # coverage
 
-A single Go binary (`coverage`) that aggregates **Cobertura** coverage XML and **JUnit**
-test-result XML from every project in a repo into one **Markdown summary** for
-the GitHub Actions "Summary" tab — with optional **regression detection**
-against a baseline.
+A single Go binary (`coverage`) that aggregates **Cobertura** coverage XML and
+**JUnit** test-result XML from every project in a repo into one **Markdown
+summary** for the CI run — with optional **regression detection** against a
+baseline.
 
-It works for TypeScript (Jest, Vitest) and Go workspaces, in any mix, and needs
-only two files per workspace: `coverage-<id>.xml` and `tests-<id>.xml`.
+It is **language-agnostic**: any toolchain that emits Cobertura + JUnit works
+(Go, TypeScript/JavaScript, Rust, Python, Java, C#), in any mix. Each project
+produces two files: `coverage-<id>.xml` and `tests-<id>.xml`.
 
 ```markdown
 ## Test Coverage
@@ -15,18 +16,29 @@ only two files per workspace: `coverage-<id>.xml` and `tests-<id>.xml`.
 
 | Workspace | Tests | Lines | % | Branches | % |
 |---|---|---|---|---|---|
-| compliance-api | 412 | 1842 / 2310 | 79.7% | 215/310 | 69.4% |
-| compliance-worker | 175 | 3120 / 3680 | 84.8% | 480/620 | 77.4% |
-| shared/awards | — | 320 / 400 | 80.0% | — | — |
+| thingy | 412 | 1842 / 2310 | 79.7% | 215/310 | 69.4% |
+| thinger | 175 | 3120 / 3680 | 84.8% | 480/620 | 77.4% |
+| shared/widget | — | 320 / 400 | 80.0% | — | — |
 | **Total** | **587** | 5282 / 6390 | **82.7%** | 695/930 | **74.7%** |
 ```
 
-- **Tests** renders `—` when no JUnit artifact was uploaded for a workspace, so
-  "missing artifact" is distinguishable from "0 tests".
-- **Branches** renders `—` when a workspace reports no branch data (common for
-  v8/Go output).
-- Totals are always **recomputed from the leaf `<line>` elements** — the tool
-  ignores the unreliable top-level totals emitters put on `<coverage>`.
+- **Tests** renders `—` when no JUnit artifact was uploaded (distinct from `0`).
+- **Branches** renders `—` when a workspace reports no branch data.
+- Totals are **recomputed from the leaf `<line>` elements** — the tool ignores
+  the unreliable top-level totals emitters put on `<coverage>`.
+
+## Supported languages & test frameworks
+
+| Language | Coverage → Cobertura | Tests → JUnit | Guide |
+|---|---|---|---|
+| Go | `gocover-cobertura` | `gotestsum` | [go.md](./docs/go.md) |
+| TypeScript / JS | Jest · Vitest · nyc | jest-junit · vitest · mocha-junit-reporter | [typescript.md](./docs/typescript.md) |
+| Rust | `cargo-llvm-cov --cobertura` | `cargo-nextest` · `cargo2junit` | [rust.md](./docs/rust.md) |
+| Python | `pytest --cov ... --cov-report=xml` | `pytest --junitxml` | [python.md](./docs/python.md) |
+| Java | JaCoCo (→ Cobertura) | Surefire / Gradle | [java.md](./docs/java.md) |
+| C# / .NET | coverlet (cobertura) | JunitXml.TestLogger | [csharp.md](./docs/csharp.md) |
+
+Any other tool that produces Cobertura + JUnit works too — see [`docs/`](./docs/index.md).
 
 ## Install
 
@@ -34,7 +46,7 @@ only two files per workspace: `coverage-<id>.xml` and `tests-<id>.xml`.
 go install github.com/aanantaco/coverage/cmd/coverage@latest
 ```
 
-Or use the composite GitHub Action (`aanantaco/coverage@v1`) — see below.
+Or use the composite GitHub Action (`aanantaco/coverage@v1`).
 
 ## Usage
 
@@ -45,10 +57,10 @@ coverage --input ./coverage-artifacts --output "$GITHUB_STEP_SUMMARY"
 | Flag | Default | Meaning |
 |---|---|---|
 | `--input` | *(required)* | directory containing `coverage-*.xml` and `tests-*.xml` |
-| `--output` | `-` | output path; `-` is stdout. A file is **appended** (matching `$GITHUB_STEP_SUMMARY`). |
+| `--output` | `-` | output path; `-` is stdout. A file is **appended**. |
 | `--ignore` | *(auto)* | path to a `.coverageignore` (gitignore syntax). Defaults to `./.coverageignore` if present. |
 | `--config` | *(auto)* | path to `coverage.yaml`. Defaults to `./coverage.yaml` if present. |
-| `--baseline` | — | path to a baseline `coverage-summary.json` to diff against. |
+| `--baseline` | — | baseline `coverage-summary.json` to diff against. |
 | `--fail-on-drop` | — | exit non-zero if **total** line coverage drops by more than this many percentage points. |
 | `--emit-json` | — | also write a machine-readable `coverage-summary.json` to this path. |
 | `--verbose` | `false` | log warnings for workspaces missing a config entry. |
@@ -59,106 +71,19 @@ CLI flags override `coverage.yaml`, which overrides built-in defaults.
 
 | Thing | Convention | Example |
 |---|---|---|
-| Coverage artifact | `coverage-<id>.xml` (Cobertura) | `coverage-compliance-api.xml` |
-| Test-count artifact | `tests-<id>.xml` (JUnit) | `tests-compliance-api.xml` |
-| Workspace id | the `<id>` in the filenames; may contain dashes | `shared-awards` |
+| Coverage artifact | `coverage-<id>.xml` (Cobertura) | `coverage-thingy.xml` |
+| Test-count artifact | `tests-<id>.xml` (JUnit) | `tests-thingy.xml` |
+| Workspace id | the `<id>` in the filenames; may contain dashes | `shared-widget` |
 | Input dir | all `coverage-*.xml` + `tests-*.xml` flattened together | `./coverage-artifacts` |
 
-## `.coverageignore` (optional)
+## CI in one job
 
-Standard gitignore syntax, matched against **repo-root-relative** paths. Start
-from [`.coverageignore.example`](./.coverageignore.example). Typical exclusions:
-generated code, test files, vendored deps, migrations, and non-unit-testable
-glue (CLI entrypoints, test utilities).
-
-When a workspace has a `prefix` configured, that prefix is prepended to each
-file before matching, so one repo-root ignore file can target any workspace.
-
-## `coverage.yaml` (optional)
-
-Entirely optional — the tool runs zero-config. Add one only to set display
-names, bridge coverage paths to your ignore patterns (common for Go module
-paths, via `strip_prefix`/`prefix`), change the folder-group depth, or enable
-regression detection. A present-but-malformed file is a hard error.
-
-See [`coverage.yaml.example`](./coverage.yaml.example) for the annotated schema.
-
-```yaml
-folder_group_depth: 3
-ignore_file: .coverageignore
-display_from: id            # or "shared-slash"
-baseline:
-  path: .coverage-baseline.json
-  # fail_on_drop: 0.5
-workspaces:
-  compliance-api:
-    display_name: services/compliance-api
-    prefix: services/compliance-api/
-    # Go emitters write full module paths; strip that before prefixing:
-    strip_prefix: github.com/acme/monorepo/services/compliance-api/
-```
-
-### Why `strip_prefix` + `prefix`?
-
-`gocover-cobertura` often emits `<class filename>` as a **package import path**
-(`github.com/acme/monorepo/services/api/foo.go`), while your `.coverageignore`
-lives at the repo root and is written relative to it
-(`services/api/internal/store/**`). The tool computes:
-
-```
-rel  = strip_prefix removed from class.filename   # -> internal/store/foo.go, used for folder grouping
-full = prefix + rel                               # -> services/api/internal/store/foo.go, matched against .coverageignore
-```
-
-Jest/Vitest already emit workspace-relative paths, so those workspaces usually
-need only `prefix` (or nothing at all).
-
-## Producing the artifacts
-
-**Jest**
-```bash
-JEST_JUNIT_OUTPUT_FILE=tests-<id>.xml \
-  npx jest --coverage --coverageReporters=cobertura \
-    --reporters=default --reporters=jest-junit
-cp coverage/cobertura-coverage.xml coverage-<id>.xml
-```
-
-**Vitest**
-```bash
-npx vitest run --coverage --coverage.reporter=cobertura \
-  --reporter=default --reporter=junit --outputFile.junit=tests-<id>.xml
-cp coverage/cobertura-coverage.xml coverage-<id>.xml
-```
-
-**Go**
-```bash
-gotestsum --junitfile tests-<id>.xml -- \
-  -coverprofile=coverage.out -covermode=atomic ./...
-gocover-cobertura < coverage.out > coverage-<id>.xml
-```
-
-## CI wiring
-
-Each test job uploads two artifacts; one downstream job downloads them all and
-runs the tool once.
-
-```yaml
-# in each test job
-- uses: actions/upload-artifact@v7
-  if: always()
-  with:
-    name: coverage-compliance-api
-    path: services/compliance-api/coverage-compliance-api.xml
-- uses: actions/upload-artifact@v7
-  if: always()
-  with:
-    name: tests-compliance-api
-    path: services/compliance-api/tests-compliance-api.xml
-```
+Each test job uploads two artifacts; one downstream job runs the tool once. Full
+copy-paste workflow: [`examples/coverage.yml`](./examples/coverage.yml).
 
 ```yaml
 report:
-  needs: [test-ts, test-go]
+  needs: [test-web, test-api]
   runs-on: ubuntu-latest
   steps:
     - uses: actions/checkout@v6
@@ -166,52 +91,40 @@ report:
       with: { pattern: coverage-*, path: ./cov, merge-multiple: true }
     - uses: actions/download-artifact@v8
       with: { pattern: tests-*, path: ./cov, merge-multiple: true }
-
-    # Option A — the composite Action
     - uses: aanantaco/coverage@v1
       with:
         input: ./cov
         output: $GITHUB_STEP_SUMMARY
-
-    # Option B — go install
-    # - uses: actions/setup-go@v6
-    #   with: { go-version: '1.26' }
-    # - run: go install github.com/aanantaco/coverage/cmd/coverage@latest
-    # - run: coverage --input ./cov --output "$GITHUB_STEP_SUMMARY"
 ```
 
-A ready-to-copy consumer workflow lives at [`examples/coverage.yml`](./examples/coverage.yml),
-and per-language/framework artifact setup is documented in
-[`docs/frameworks.md`](./docs/frameworks.md).
+## Optional config
 
-## Regression detection
+- **`.coverageignore`** — gitignore syntax, matched against repo-root-relative
+  paths, for excluding generated code, test files, vendored deps, etc. Start
+  from [`.coverageignore.example`](./.coverageignore.example).
+- **`coverage.yaml`** — optional and zero-config by default. Sets display names,
+  bridges coverage paths to ignore patterns (`prefix` / `strip_prefix`), folder
+  depth, and the regression baseline. Annotated schema:
+  [`coverage.yaml.example`](./coverage.yaml.example). A present-but-malformed
+  file is a hard error.
 
-The tool can diff the current run against a baseline and add **Δ columns** plus a
-callout for any workspace whose line coverage dropped:
+`prefix`/`strip_prefix` bridge emitter paths to a repo-root ignore file: the tool
+computes `rel = strip_prefix removed from filename` (used for folder grouping)
+and `full = prefix + rel` (matched against `.coverageignore`). Go module import
+paths are the usual reason to set `strip_prefix` — see [docs/go.md](./docs/go.md).
 
-```markdown
-> ⚠️ **Coverage decreased** in 1 workspace:
-> - `compliance-worker`: 84.8% → 83.1% (▼ 1.7pp)
-```
+## Coverage deltas across runs
 
-The baseline is a `coverage-summary.json` the tool emits with `--emit-json`. It
-contains no timestamps, so identical coverage produces an identical file (clean
-diffs). Deltas render as `▲ +1.2` / `▼ -0.8` / `▬ 0.0`; a workspace absent from
-the baseline is marked `new`; removed workspaces are listed in a note.
+Emit a baseline with `--emit-json coverage-summary.json`, then pass it back on a
+later run with `--baseline` to get Δ columns, a "coverage decreased" callout, and
+`new`/removed markers; add `--fail-on-drop 0.5` to fail on a total drop. The full
+recipe (default-branch cache, artifact, or committed baseline) is in
+[docs/regression.md](./docs/regression.md).
 
-Recommended flow:
+## Documentation
 
-1. **On merges to your default branch**, run with `--emit-json coverage-summary.json`
-   and upload/cache it as the baseline (no repo commits, always fresh).
-2. **On PRs**, download that baseline and pass `--baseline coverage-summary.json`
-   (or set `baseline.path` in `coverage.yaml`).
-3. Optionally set `--fail-on-drop 0.5` to fail a PR that drops total coverage by
-   more than 0.5 percentage points. Left unset, it only annotates. The report is
-   always written **before** a fail-on-drop exit, so the summary still renders.
-
-Edge cases: a missing baseline file (normal on a new branch) is not an error —
-regression detection is simply skipped. A baseline whose `schema` doesn't match
-is skipped with a warning rather than crashing.
+Full docs — per-language guides, the regression guide, and references — live in
+[`docs/`](./docs/index.md).
 
 ## Development
 
@@ -221,14 +134,12 @@ go test ./...
 ```
 
 A single runtime dependency: [`github.com/goccy/go-yaml`](https://github.com/goccy/go-yaml)
-(config parsing) — an actively maintained, dependency-free YAML library.
-Everything else — Cobertura/JUnit parsing, `.coverageignore` gitignore matching,
-folder grouping, delta computation, baseline JSON — is implemented in-repo on
-the standard library. Tests use the standard library only.
-
-The `.coverageignore` matcher (`internal/ignore/gitignore.go`) is a
+(config parsing) — actively maintained and dependency-free. Everything else —
+Cobertura/JUnit parsing, `.coverageignore` gitignore matching, folder grouping,
+delta computation, baseline JSON — is implemented in-repo on the standard
+library. Tests use the standard library only. The `.coverageignore` matcher is a
 dependency-free port of [`github.com/sabhiram/go-gitignore`](https://github.com/sabhiram/go-gitignore)
-(MIT), preserving its exact matching semantics.
+(MIT) — see [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
 
 ## License
 

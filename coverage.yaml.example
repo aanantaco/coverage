@@ -33,17 +33,17 @@ display_from: id
 # Per-workspace overrides. The KEY is the workspace id (the <id> in
 # coverage-<id>.xml). Every field here is optional per workspace.
 workspaces:
-  compliance-api:
+  thingy:
     # Display label in the report. Default: derived from id via display_from.
-    display_name: services/compliance-api
+    display_name: services/thingy
     # Prefix prepended to each class filename before matching .coverageignore,
     # so a repo-root ignore file can target this workspace's files.
-    prefix: services/compliance-api/
+    prefix: services/thingy/
     # Prefix stripped from each class filename BEFORE the prefix is applied.
     # Use for Go emitters (gocover-cobertura) that write full module import
-    # paths like github.com/acme/monorepo/services/compliance-api/foo.go.
-    strip_prefix: github.com/acme/monorepo/services/compliance-api/
+    # paths like github.com/acme/monorepo/services/thingy/foo.go.
+    strip_prefix: github.com/acme/monorepo/services/thingy/
 
-  shared-awards:
-    display_name: shared/awards
-    prefix: shared/awards/
+  shared-widget:
+    display_name: shared/widget
+    prefix: shared/widget/

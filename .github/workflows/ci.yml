@@ -63,3 +63,53 @@ jobs:
             --input ./coverage-artifacts \
             --ignore .coverageignore \
             --output "$GITHUB_STEP_SUMMARY"
+
+  # ==========================================================================
+  # Security
+  # ==========================================================================
+  security-scan:
+    name: Security Scan (Trivy)
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run Trivy + render markdown report
+        id: trivy
+        run: |
+          mkdir -p trivy-report
+          set +e
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            aquasec/trivy:latest \
+            filesystem \
+            --exit-code 1 \
+            --severity MEDIUM,HIGH,CRITICAL \
+            --scanners vuln,secret,misconfig \
+            --ignorefile .trivyignore \
+            --skip-version-check \
+            --format table \
+            --output trivy-report/trivy-report.md \
+            .
+          trivy_exit=$?
+          set -e
+          {
+            echo "## Trivy Security Scan"
+            echo ""
+            echo "Severities: MEDIUM, HIGH, CRITICAL — scanners: vuln, secret, misconfig"
+            echo ""
+            echo '```'
+            cat trivy-report/trivy-report.md
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$trivy_exit"
+
+      - name: Upload Trivy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report/
+          if-no-files-found: warn
+          retention-days: 30

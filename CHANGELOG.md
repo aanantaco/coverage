@@ -11,8 +11,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Dropped the `github.com/sabhiram/go-gitignore` dependency.** `.coverageignore`
   matching is now implemented in-repo (`internal/ignore/gitignore.go`) as a
   dependency-free port of that library, preserving its exact matching semantics.
-  The binary now has a single external dependency, `gopkg.in/yaml.v3`. Added
-  `THIRD_PARTY_NOTICES.md` with the ported code's MIT attribution.
+  Added `THIRD_PARTY_NOTICES.md` with the ported code's MIT attribution.
+- **Switched YAML parsing from `gopkg.in/yaml.v3` to `github.com/goccy/go-yaml`.**
+  The upstream `go-yaml/yaml` was archived and marked unmaintained in April 2025;
+  `goccy/go-yaml` is an actively maintained, dependency-free replacement. Strict
+  decoding (unknown-key rejection) is preserved via `yaml.Strict()`. The binary
+  now has a single external dependency with no transitive module dependencies.
 
 ## [0.1.0] - 2026-07-07
 

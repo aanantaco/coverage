@@ -9,12 +9,10 @@ package config
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 
-	"gopkg.in/yaml.v3"
+	yaml "github.com/goccy/go-yaml"
 )
 
 const (
@@ -79,17 +77,15 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("read config %q: %w", path, err)
 	}
 
-	// Start from a zero Config so we can tell which fields were set, then
-	// decode strictly to catch typos.
+	// An empty or whitespace-only file is a valid all-defaults config.
+	if len(bytes.TrimSpace(data)) == 0 {
+		return Default(), nil
+	}
+
+	// Decode strictly (yaml.Strict enables DisallowUnknownField) so that
+	// typo'd keys are errors rather than silently ignored.
 	var cfg Config
-	dec := yaml.NewDecoder(bytes.NewReader(data))
-	dec.KnownFields(true)
-	if err := dec.Decode(&cfg); err != nil {
-		// An empty file decodes to io.EOF from the decoder; treat that as an
-		// all-defaults config rather than an error.
-		if errors.Is(err, io.EOF) {
-			return Default(), nil
-		}
+	if err := yaml.UnmarshalWithOptions(data, &cfg, yaml.Strict()); err != nil {
 		return nil, fmt.Errorf("parse config %q: %w", path, err)
 	}
 

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Coverage</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1f2328; --muted: #656d76; --border: #d0d7de;
+    --head: #f6f8fa; --up: #1a7f37; --down: #cf222e; --flat: #656d76; --accent: #0969da;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117; --fg: #e6edf3; --muted: #8b949e; --border: #30363d;
+      --head: #161b22; --up: #3fb950; --down: #f85149; --flat: #8b949e; --accent: #4493f8;
+    }
+  }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; margin: 0; padding: 2rem 1rem; }
+  main { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 1rem; }
+  h2 { font-size: 1.15rem; margin: 1.75rem 0 .5rem; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { padding: .4rem .6rem; border: 1px solid var(--border); text-align: left; white-space: nowrap; }
+  thead th { background: var(--head); }
+  td.num, th.num { text-align: right; }
+  tr.total td { font-weight: 700; background: var(--head); }
+  td.folder { color: var(--muted); }
+  .up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--flat); }
+  .new { color: var(--accent); font-weight: 600; }
+  .na { color: var(--muted); }
+  .callout { border: 1px solid var(--down); border-radius: 6px; padding: .75rem 1rem; margin: 1rem 0; background: color-mix(in srgb, var(--down) 8%, transparent); }
+  .callout ul { margin: .4rem 0 0; padding-left: 1.2rem; }
+  code { background: var(--head); padding: .1rem .3rem; border-radius: 4px; }
+  .note { color: var(--muted); font-size: .9rem; margin-top: 1rem; }
+</style>
+</head>
+<body>
+<main>
+<h1>Test Coverage</h1>
+{{if .Empty}}
+<p class="note">No coverage artifacts found.</p>
+{{else}}
+{{if .Regressions}}
+<div class="callout">
+  ⚠️ <strong>Coverage decreased</strong> in {{len .Regressions}} {{pluralize (len .Regressions) "workspace" "workspaces"}}:
+  <ul>
+  {{range .Regressions}}<li><code>{{.DisplayName}}</code>: {{fmtPct .OldPercent}} → {{fmtPct .NewPercent}} (▼ {{fmtDrop .DropPP}}pp)</li>{{end}}
+  </ul>
+</div>
+{{end}}
+
+<h2>Summary</h2>
+<div class="scroll">
+<table>
+  <thead><tr>
+    <th>Workspace</th><th class="num">Tests</th><th class="num">Lines</th><th class="num">%</th>
+    {{if .HasBaseline}}<th class="num">Δ</th>{{end}}
+    <th class="num">Branches</th><th class="num">%</th>{{if .HasBaseline}}<th class="num">Δ</th>{{end}}
+  </tr></thead>
+  <tbody>
+  {{range .Summary}}<tr{{if .IsTotal}} class="total"{{end}}>
+    <td>{{if .IsTotal}}Total{{else}}{{.Label}}{{end}}</td>
+    <td class="num">{{.Tests}}</td>
+    <td class="num">{{linesCell .}}</td>
+    <td class="num">{{linePct .}}</td>
+    {{if $.HasBaseline}}<td class="num {{deltaClass .}}">{{deltaLine .}}</td>{{end}}
+    <td class="num">{{branchesCell .}}</td>
+    <td class="num">{{branchPct .}}</td>
+    {{if $.HasBaseline}}<td class="num {{branchClass .}}">{{deltaBranch .}}</td>{{end}}
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+
+<h2>Breakdown by folder</h2>
+<div class="scroll">
+<table>
+  <thead><tr>
+    <th>Workspace / Folder</th><th class="num">Lines</th><th class="num">%</th>
+    {{if .HasBaseline}}<th class="num">Δ</th>{{end}}
+    <th class="num">Branches</th><th class="num">%</th>{{if .HasBaseline}}<th class="num">Δ</th>{{end}}
+  </tr></thead>
+  <tbody>
+  {{range .Breakdown}}<tr>
+    <td class="{{if .IsFolder}}folder{{end}}">{{if .IsFolder}}└ {{.Label}}{{else}}<strong>{{.Label}}</strong>{{end}}</td>
+    <td class="num">{{linesCell .}}</td>
+    <td class="num">{{linePct .}}</td>
+    {{if $.HasBaseline}}<td class="num {{deltaClass .}}">{{deltaLine .}}</td>{{end}}
+    <td class="num">{{branchesCell .}}</td>
+    <td class="num">{{branchPct .}}</td>
+    {{if $.HasBaseline}}<td class="num {{branchClass .}}">{{deltaBranch .}}</td>{{end}}
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+
+{{if .Removed}}<p class="note">Removed since baseline: {{join .Removed ", "}}</p>{{end}}
+{{if .IgnoreFileLoaded}}<p class="note">Excluded paths from <code>.coverageignore</code>: {{.ExcludedFiles}} files</p>{{end}}
+{{end}}
+</main>
+</body>
+</html>

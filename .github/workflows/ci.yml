@@ -46,9 +46,9 @@ jobs:
       # workspace-id convention the tool consumes: coverage-<id>.xml / tests-<id>.xml.
       - name: Run tests with coverage
         run: |
-          gotestsum --junitfile tests-coverage-report.xml --format pkgname \
+          gotestsum --junitfile tests-coverage.xml --format pkgname \
             -- -coverprofile=coverage.out -covermode=atomic -count=1 ./...
-          gocover-cobertura < coverage.out > coverage-coverage-report.xml
+          gocover-cobertura < coverage.out > coverage-coverage.xml
 
       # Dogfood: build the app and use it to render this repo's own coverage
       # into the run's Summary tab.
@@ -58,7 +58,7 @@ jobs:
       - name: Coverage summary
         run: |
           mkdir -p ./coverage-artifacts
-          mv coverage-coverage-report.xml tests-coverage-report.xml ./coverage-artifacts/
+          mv coverage-coverage.xml tests-coverage.xml ./coverage-artifacts/
           "$RUNNER_TEMP/coverage" \
             --input ./coverage-artifacts \
             --ignore .coverageignore \

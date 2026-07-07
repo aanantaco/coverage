@@ -46,6 +46,10 @@ type Options struct {
 
 	EmitJSON string
 
+	// Format is the output format: "markdown", "html", or "" to auto-detect
+	// from the --output extension (.html/.htm => html, else markdown).
+	Format string
+
 	Verbose bool
 
 	Stdout io.Writer
@@ -136,8 +140,18 @@ func Run(opts Options) error {
 	}
 
 	// Render and write.
-	out := render.Markdown(summary)
-	if err := writeOutput(opts, out); err != nil {
+	format, err := resolveFormat(opts)
+	if err != nil {
+		return err
+	}
+	var out string
+	switch format {
+	case "html":
+		out = render.HTML(summary)
+	default:
+		out = render.Markdown(summary)
+	}
+	if err := writeOutput(opts, out, format); err != nil {
 		return err
 	}
 
@@ -391,13 +405,18 @@ func resolveFailOnDrop(opts Options, cfg *config.Config) *float64 {
 	return cfg.Baseline.FailOnDrop
 }
 
-func writeOutput(opts Options, content string) error {
+func writeOutput(opts Options, content, format string) error {
 	if opts.Output == "-" {
 		_, err := io.WriteString(opts.Stdout, content)
 		return err
 	}
-	// Append, because $GITHUB_STEP_SUMMARY is append-only.
-	f, err := os.OpenFile(opts.Output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	// Markdown appends (so $GITHUB_STEP_SUMMARY accumulates); a standalone HTML
+	// document is truncated so re-runs don't concatenate multiple pages.
+	flags := os.O_APPEND | os.O_CREATE | os.O_WRONLY
+	if format == "html" {
+		flags = os.O_TRUNC | os.O_CREATE | os.O_WRONLY
+	}
+	f, err := os.OpenFile(opts.Output, flags, 0o644)
 	if err != nil {
 		return fmt.Errorf("open output %q: %w", opts.Output, err)
 	}
@@ -406,6 +425,27 @@ func writeOutput(opts Options, content string) error {
 		return fmt.Errorf("write output %q: %w", opts.Output, err)
 	}
 	return nil
+}
+
+// resolveFormat determines the output format from the flag, or auto-detects
+// from the --output extension. Unknown formats are an error.
+func resolveFormat(opts Options) (string, error) {
+	f := strings.ToLower(strings.TrimSpace(opts.Format))
+	if f == "" {
+		lower := strings.ToLower(opts.Output)
+		if strings.HasSuffix(lower, ".html") || strings.HasSuffix(lower, ".htm") {
+			return "html", nil
+		}
+		return "markdown", nil
+	}
+	switch f {
+	case "markdown", "md":
+		return "markdown", nil
+	case "html":
+		return "html", nil
+	default:
+		return "", fmt.Errorf("unknown --format %q (want markdown or html)", opts.Format)
+	}
 }
 
 // --- helpers ---

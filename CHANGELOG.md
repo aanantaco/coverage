@@ -8,6 +8,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **HTML report output.** `--format html` (or an `.html`/`.htm` `--output`)
+  renders a self-contained, theme-aware HTML page. Both Markdown and HTML are
+  now rendered from embedded templates (`internal/render/templates/report.md.tmpl`
+  and `report.html.tmpl`); the Markdown output is unchanged (locked by golden
+  tests).
 - **Documentation site** under `docs/` with an index and per-language how-to
   guides (Go, TypeScript/JS, Rust, Python, Java, C#) — each listing supported
   test frameworks, artifact commands, and an example config — plus a

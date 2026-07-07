@@ -17,7 +17,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version: "1.26"
           cache: true
 
       - name: Check formatting
@@ -36,11 +36,11 @@ jobs:
         run: go build ./...
 
       - name: Install test tooling
-        # gocover-cobertura is pinned to the last release that supports Go 1.24
-        # (v1.5.0 requires Go >= 1.25). gotestsum is pinned for reproducibility.
+        # Both tools are pinned for reproducibility. gocover-cobertura v1.5.0
+        # requires Go >= 1.25, satisfied by the Go 1.26 toolchain above.
         run: |
           go install gotest.tools/gotestsum@v1.13.0
-          go install github.com/boumenot/gocover-cobertura@v1.4.0
+          go install github.com/boumenot/gocover-cobertura@v1.5.0
 
       # Produce Cobertura + JUnit artifacts for this module, using the same
       # workspace-id convention the tool consumes: coverage-<id>.xml / tests-<id>.xml.
@@ -63,3 +63,53 @@ jobs:
             --input ./coverage-artifacts \
             --ignore .coverageignore \
             --output "$GITHUB_STEP_SUMMARY"
+
+  # ==========================================================================
+  # Security
+  # ==========================================================================
+  security-scan:
+    name: Security Scan (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run Trivy + render markdown report
+        id: trivy
+        run: |
+          mkdir -p trivy-report
+          set +e
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            aquasec/trivy:latest \
+            filesystem \
+            --exit-code 1 \
+            --severity MEDIUM,HIGH,CRITICAL \
+            --scanners vuln,secret,misconfig \
+            --ignorefile .trivyignore \
+            --skip-version-check \
+            --format table \
+            --output trivy-report/trivy-report.md \
+            .
+          trivy_exit=$?
+          set -e
+          {
+            echo "## Trivy Security Scan"
+            echo ""
+            echo "Severities: MEDIUM, HIGH, CRITICAL — scanners: vuln, secret, misconfig"
+            echo ""
+            echo '```'
+            cat trivy-report/trivy-report.md
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$trivy_exit"
+
+      - name: Upload Trivy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report/
+          if-no-files-found: warn
+          retention-days: 30

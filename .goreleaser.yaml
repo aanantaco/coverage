@@ -1,7 +1,9 @@
 # GoReleaser configuration (https://goreleaser.com).
-# Runs on version tags via .github/workflows/ci.yml. Validate locally with:
+# The CI workflow runs `goreleaser release --snapshot --clean` on each merge to
+# main and uploads dist/ as a workflow artifact — no tags, no GitHub Release;
+# archives are keyed to the commit SHA. Validate locally with:
 #   goreleaser check
-#   goreleaser release --snapshot --clean   # dry run, no publish
+#   goreleaser release --snapshot --clean
 version: 2
 
 project_name: coverage
@@ -35,16 +37,7 @@ archives:
 checksum:
   name_template: checksums.txt
 
-changelog:
-  use: github
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
-      - "^ci:"
-      - "^chore:"
-
-release:
-  draft: false
-  prerelease: auto
+# No tags are cut, so snapshot builds key the version to the commit SHA. This
+# flows into the archive name_template ({{ .Version }}).
+snapshot:
+  version_template: "0.0.0-{{ .ShortCommit }}"

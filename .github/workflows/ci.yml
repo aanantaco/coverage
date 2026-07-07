@@ -3,7 +3,6 @@ name: CI
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
 
 permissions:
@@ -116,32 +115,40 @@ jobs:
           retention-days: 30
 
   # ==========================================================================
-  # Release
+  # Release binaries (per-commit)
   # ==========================================================================
-  # Runs only on version tags (e.g. v0.1.0), after build/test and the security
-  # scan pass. GoReleaser cross-compiles the `coverage` binary and publishes a
-  # GitHub Release with archives + checksums.
+  # Runs on every merge to main, after build/test and the security scan pass.
+  # GoReleaser cross-compiles the `coverage` binary (snapshot mode, keyed to the
+  # commit SHA) and uploads the archives + checksums as a workflow artifact.
+  # No git tags and no GitHub Release — consumers pin by commit SHA.
   release:
-    name: Release (GoReleaser)
-    if: startsWith(github.ref, 'refs/tags/v')
+    name: Build release binaries
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [build, security-scan]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # create the release and upload assets
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0 # full history + tags for the changelog
+          fetch-depth: 0
 
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
           cache: true
 
-      - name: Run GoReleaser
+      - name: Build binaries (GoReleaser snapshot)
         uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          args: release --snapshot --clean
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-binaries-${{ github.sha }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
+          if-no-files-found: error
+          retention-days: 90

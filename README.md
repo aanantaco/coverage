@@ -46,16 +46,24 @@ Any other tool that produces Cobertura + JUnit works too — see [`docs/`](./doc
 go install github.com/aanantaco/coverage/cmd/coverage@latest
 ```
 
-Or use the composite GitHub Action (`aanantaco/coverage@v1`).
+Or use the composite GitHub Action, **pinned to a commit SHA** (recommended):
 
-### Releases
+```yaml
+- uses: aanantaco/coverage@<commit-sha>
+```
 
-Tagged releases (`vX.Y.Z`) publish prebuilt `coverage` binaries for
-linux/macOS/Windows (amd64/arm64) as a GitHub Release, via GoReleaser. Non-Go
-projects can download a static binary in CI instead of installing a Go
-toolchain. Cutting a release is just pushing a tag — the `release` job in
-[`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs GoReleaser after
-the build and security-scan jobs pass.
+The Action builds the tool from its own source at that SHA, so the pin selects
+the exact tool version. (`go install …@<sha>` works the same way for the CLI.)
+
+### Binaries
+
+There are no version tags. Every merge to `main` runs the `release` job in
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml), which cross-compiles
+`coverage` (linux/macOS/Windows × amd64/arm64) with GoReleaser and uploads the
+archives + `checksums.txt` as a workflow artifact named
+`coverage-binaries-<sha>`. Non-Go projects can download that artifact instead of
+installing a Go toolchain. Archives are versioned by the commit SHA
+(`coverage_0.0.0-<shortsha>_<os>_<arch>`).
 
 ## Usage
 
@@ -111,7 +119,7 @@ report:
       with: { pattern: coverage-*, path: ./cov, merge-multiple: true }
     - uses: actions/download-artifact@v8
       with: { pattern: tests-*, path: ./cov, merge-multiple: true }
-    - uses: aanantaco/coverage@v1
+    - uses: aanantaco/coverage@<commit-sha>
       with:
         input: ./cov
         output: $GITHUB_STEP_SUMMARY

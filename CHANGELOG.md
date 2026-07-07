@@ -8,6 +8,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Release automation (GoReleaser).** A `release` job in the CI workflow runs
+  on version tags (`v*`), after build/test and the security scan pass, and
+  publishes prebuilt `coverage` binaries (linux/macOS/Windows, amd64/arm64) with
+  checksums as a GitHub Release. Config in `.goreleaser.yaml`.
 - **HTML report output.** `--format html` (or an `.html`/`.htm` `--output`)
   renders a self-contained, theme-aware HTML page. Both Markdown and HTML are
   now rendered from embedded templates (`internal/render/templates/report.md.tmpl`

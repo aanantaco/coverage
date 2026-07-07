@@ -48,6 +48,15 @@ go install github.com/aanantaco/coverage/cmd/coverage@latest
 
 Or use the composite GitHub Action (`aanantaco/coverage@v1`).
 
+### Releases
+
+Tagged releases (`vX.Y.Z`) publish prebuilt `coverage` binaries for
+linux/macOS/Windows (amd64/arm64) as a GitHub Release, via GoReleaser. Non-Go
+projects can download a static binary in CI instead of installing a Go
+toolchain. Cutting a release is just pushing a tag — the `release` job in
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs GoReleaser after
+the build and security-scan jobs pass.
+
 ## Usage
 
 ```bash

@@ -216,8 +216,15 @@ go build ./...
 go test ./...
 ```
 
-Only two runtime dependencies: `github.com/sabhiram/go-gitignore` and
-`gopkg.in/yaml.v3`. Tests use the standard library only.
+A single runtime dependency: [`github.com/goccy/go-yaml`](https://github.com/goccy/go-yaml)
+(config parsing) — an actively maintained, dependency-free YAML library.
+Everything else — Cobertura/JUnit parsing, `.coverageignore` gitignore matching,
+folder grouping, delta computation, baseline JSON — is implemented in-repo on
+the standard library. Tests use the standard library only.
+
+The `.coverageignore` matcher (`internal/ignore/gitignore.go`) is a
+dependency-free port of [`github.com/sabhiram/go-gitignore`](https://github.com/sabhiram/go-gitignore)
+(MIT), preserving its exact matching semantics.
 
 ## License
 

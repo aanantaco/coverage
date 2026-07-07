@@ -63,9 +63,20 @@ coverage --input ./coverage-artifacts --output "$GITHUB_STEP_SUMMARY"
 | `--baseline` | — | baseline `coverage-summary.json` to diff against. |
 | `--fail-on-drop` | — | exit non-zero if **total** line coverage drops by more than this many percentage points. |
 | `--emit-json` | — | also write a machine-readable `coverage-summary.json` to this path. |
+| `--format` | *(auto)* | output format: `markdown` or `html`. Auto-detects `html` from an `.html`/`.htm` `--output`. |
 | `--verbose` | `false` | log warnings for workspaces missing a config entry. |
 
 CLI flags override `coverage.yaml`, which overrides built-in defaults.
+
+### Output formats
+
+- **Markdown** (default) — for `$GITHUB_STEP_SUMMARY`. Written in append mode.
+- **HTML** — a self-contained, theme-aware page (`--format html`, or an
+  `.html`/`.htm` output path). Written in truncate mode.
+
+Both formats are rendered from templates in
+[`internal/render/templates/`](./internal/render/templates/) (`report.md.tmpl`,
+`report.html.tmpl`).
 
 ## Filename conventions (load-bearing)
 

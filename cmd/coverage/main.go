@@ -22,6 +22,7 @@ func main() {
 	baselinePath := fs.String("baseline", "", "path to a baseline coverage-summary.json for regression detection")
 	failOnDrop := fs.Float64("fail-on-drop", 0, "fail (exit non-zero) if total line coverage drops by more than this many percentage points")
 	emitJSON := fs.String("emit-json", "", "also write a machine-readable coverage-summary.json to this path")
+	format := fs.String("format", "", "output format: markdown or html (default: auto-detect from --output extension)")
 	verbose := fs.Bool("verbose", false, "log warnings for workspaces missing a config entry")
 
 	if err := fs.Parse(os.Args[1:]); err != nil {
@@ -44,6 +45,7 @@ func main() {
 		BaselinePath: *baselinePath,
 		BaselineSet:  flagSet(fs, "baseline"),
 		EmitJSON:     *emitJSON,
+		Format:       *format,
 		Verbose:      *verbose,
 		Stdout:       os.Stdout,
 		Stderr:       os.Stderr,

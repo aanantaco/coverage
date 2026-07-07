@@ -32,6 +32,9 @@ two artifacts, and an example `coverage.yaml` block.
 
 ## Reference
 
+- Output formats — Markdown (default) or a self-contained HTML page
+  (`--format html`, or an `.html`/`.htm` `--output`). Both render from templates
+  in [`internal/render/templates/`](../internal/render/templates/).
 - Config schema — [`coverage.yaml.example`](../coverage.yaml.example)
 - Ignore file — [`.coverageignore.example`](../.coverageignore.example)
 - Example CI workflow — [`examples/coverage.yml`](../examples/coverage.yml)

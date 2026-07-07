@@ -217,3 +217,49 @@ func TestRunInvalidInputDir(t *testing.T) {
 		t.Fatal("expected error for missing input dir")
 	}
 }
+
+func TestRunHTMLFormat(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "coverage-api.xml", coverageDoc(map[string][]int{"src/a.ts": {1, 1, 0}}))
+
+	// Explicit --format html to a file.
+	htmlPath := filepath.Join(dir, "report.html")
+	if err := Run(Options{Input: dir, Output: htmlPath, Format: "html", Stdout: &bytes.Buffer{}, Stderr: &bytes.Buffer{}}); err != nil {
+		t.Fatalf("Run html: %v", err)
+	}
+	data, _ := os.ReadFile(htmlPath)
+	if !strings.HasPrefix(string(data), "<!doctype html>") {
+		t.Errorf("expected HTML document, got: %.40q", string(data))
+	}
+
+	// HTML output truncates on re-run (no concatenation).
+	if err := Run(Options{Input: dir, Output: htmlPath, Format: "html", Stdout: &bytes.Buffer{}, Stderr: &bytes.Buffer{}}); err != nil {
+		t.Fatal(err)
+	}
+	data2, _ := os.ReadFile(htmlPath)
+	if strings.Count(string(data2), "<!doctype html>") != 1 {
+		t.Error("HTML output should be truncated, not appended, on re-run")
+	}
+}
+
+func TestRunFormatAutoDetect(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "coverage-api.xml", coverageDoc(map[string][]int{"src/a.ts": {1, 1}}))
+	out := filepath.Join(dir, "cov.htm")
+	if err := Run(Options{Input: dir, Output: out, Stdout: &bytes.Buffer{}, Stderr: &bytes.Buffer{}}); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(out)
+	if !strings.HasPrefix(string(data), "<!doctype html>") {
+		t.Error(".htm output should auto-detect html")
+	}
+}
+
+func TestRunUnknownFormatErrors(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "coverage-api.xml", coverageDoc(map[string][]int{"src/a.ts": {1}}))
+	err := Run(Options{Input: dir, Format: "pdf", Stdout: &bytes.Buffer{}, Stderr: &bytes.Buffer{}})
+	if err == nil {
+		t.Fatal("expected error for unknown format")
+	}
+}

@@ -1,6 +1,11 @@
 // Command coverage aggregates Cobertura coverage and JUnit test-result
-// artifacts into a single Markdown summary for a CI run, with optional
+// artifacts into a single Markdown (or HTML) report for a CI run, with optional
 // config-driven display and regression detection against a baseline.
+//
+// Subcommands:
+//
+//	coverage --input <dir> [flags]   render a coverage report (default)
+//	coverage init [flags]            scaffold a workflow + config for this repo
 package main
 
 import (
@@ -10,9 +15,18 @@ import (
 	"os"
 
 	"github.com/aanantaco/coverage/internal/app"
+	"github.com/aanantaco/coverage/internal/scaffold"
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "init" {
+		runInit(os.Args[2:])
+		return
+	}
+	runReport(os.Args[1:])
+}
+
+func runReport(args []string) {
 	fs := flag.NewFlagSet("coverage", flag.ContinueOnError)
 
 	input := fs.String("input", "", "directory containing coverage-*.xml and tests-*.xml artifacts (required)")
@@ -25,7 +39,7 @@ func main() {
 	format := fs.String("format", "", "output format: markdown or html (default: auto-detect from --output extension)")
 	verbose := fs.Bool("verbose", false, "log warnings for workspaces missing a config entry")
 
-	if err := fs.Parse(os.Args[1:]); err != nil {
+	if err := fs.Parse(args); err != nil {
 		os.Exit(2)
 	}
 
@@ -59,6 +73,26 @@ func main() {
 			// The report was already written; exit non-zero to fail the build.
 			os.Exit(1)
 		}
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func runInit(args []string) {
+	fs := flag.NewFlagSet("coverage init", flag.ContinueOnError)
+	dir := fs.String("dir", ".", "repository directory to scaffold")
+	dryRun := fs.Bool("dry-run", false, "print what would be created without writing files")
+	if err := fs.Parse(args); err != nil {
+		os.Exit(2)
+	}
+
+	err := scaffold.Run(scaffold.Options{
+		Dir:    *dir,
+		DryRun: *dryRun,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	})
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

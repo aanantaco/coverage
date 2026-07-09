@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`coverage version` subcommand** (also `coverage --version`). Prints the
+  build version and the commit SHA it was built from — the SHA consumers pin
+  releases by. Version/commit are stamped in via GoReleaser `-ldflags -X`; a
+  plain `go build` reports `dev`.
+- **`govulncheck` in CI.** The build job now runs
+  `govulncheck` (pinned `@v1.5.0`) for Go-symbol-aware vulnerability scanning —
+  it only flags advisories whose vulnerable code is actually reachable, catching
+  Go-specific issues Trivy's filesystem scan misses.
 - **TypeScript/JS docs: count every source file.** `docs/TYPESCRIPT.md` and
   `llms.txt` now explain how to enable all-files coverage (Vitest `all` +
   `include: ['src/**']`, Jest `collectCoverageFrom`) so untested source files
@@ -48,6 +56,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **CI actions are SHA-pinned.** All third-party GitHub Actions
+  (`actions/checkout`, `actions/setup-go`, `actions/upload-artifact`,
+  `goreleaser/goreleaser-action`) are pinned to commit SHAs with a version
+  comment, and the Trivy scanner image is pinned to `0.72.0` by digest instead
+  of the floating `:latest` tag — reproducible builds and no surprise upgrades.
 - **`internal/render` no longer panics.** `Markdown`/`HTML` ignore the
   unreachable template-execution error (templates are embedded and validated at
   init) instead of panicking, honoring the no-panics-in-library-code convention.

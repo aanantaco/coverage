@@ -69,6 +69,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **README: a complete "Add it to your workflow" guide.** Replaces the minimal
+  report-job snippet with a full two-job example (a test job that emits the
+  artifacts plus the report job that runs the Action), the three moving parts
+  spelled out, and the example pins bumped to a commit that supports binary
+  download.
 - **Composite Action downloads a prebuilt binary (no Go toolchain).** When
   pinned by a full commit SHA (the recommended usage), the Action fetches the
   prebuilt binary from the matching per-commit prerelease and verifies its

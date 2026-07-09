@@ -8,6 +8,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Community health files.** `CONTRIBUTING.md` (build/test/lint workflow and the
+  repo's conventions), `SECURITY.md` (private vulnerability reporting via GitHub
+  Security Advisories), a `.github/dependabot.yml` that keeps the Go dependency
+  and the SHA-pinned Actions current, and CI/Go-reference/Go-version/license
+  badges on the README.
 - **`coverage version` subcommand** (also `coverage --version`). Prints the
   build version and the commit SHA it was built from — the SHA consumers pin
   releases by. Version/commit are stamped in via GoReleaser `-ldflags -X`; a

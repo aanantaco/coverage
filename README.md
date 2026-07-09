@@ -1,5 +1,10 @@
 # coverage
 
+[![CI](https://github.com/aanantaco/coverage/actions/workflows/ci.yml/badge.svg)](https://github.com/aanantaco/coverage/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/aanantaco/coverage.svg)](https://pkg.go.dev/github.com/aanantaco/coverage)
+[![Go 1.26](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](go.mod)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A single Go binary (`coverage`) that aggregates **Cobertura** coverage XML and
 **JUnit** test-result XML from every project in a repo into one **Markdown
 summary** for the CI run — with optional **regression detection** against a

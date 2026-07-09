@@ -1,6 +1,9 @@
 package junit
 
 import (
+	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -64,5 +67,67 @@ func TestParseZeroTestsPlaceholder(t *testing.T) {
 	}
 	if r.Tests != 0 {
 		t.Errorf("expected 0 tests, got %d", r.Tests)
+	}
+}
+
+func TestParseFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tests-x.xml")
+	if err := os.WriteFile(path, []byte(`<testsuite tests="4" failures="0"/>`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r, err := ParseFile(path)
+	if err != nil {
+		t.Fatalf("ParseFile: %v", err)
+	}
+	if r.Tests != 4 {
+		t.Errorf("Tests = %d, want 4", r.Tests)
+	}
+}
+
+func TestParseFileMissing(t *testing.T) {
+	if _, err := ParseFile(filepath.Join(t.TempDir(), "nope.xml")); err == nil {
+		t.Fatal("expected an error for a missing file")
+	}
+}
+
+func TestParseUnexpectedRoot(t *testing.T) {
+	_, err := Parse(strings.NewReader(`<report tests="1"/>`))
+	if err == nil || !strings.Contains(err.Error(), "unexpected root element") {
+		t.Fatalf("expected unexpected-root error, got %v", err)
+	}
+}
+
+func TestParseMalformedTestsuitesAttr(t *testing.T) {
+	// Well-formed enough to identify the root, but the attribute is not an int,
+	// so the <testsuites> unmarshal fails.
+	_, err := Parse(strings.NewReader(`<testsuites><testsuite tests="lots"/></testsuites>`))
+	if err == nil {
+		t.Fatal("expected a parse error for a non-numeric tests attribute")
+	}
+}
+
+func TestParseMalformedBareTestsuiteAttr(t *testing.T) {
+	_, err := Parse(strings.NewReader(`<testsuite tests="lots"/>`))
+	if err == nil {
+		t.Fatal("expected a parse error for a non-numeric tests attribute")
+	}
+}
+
+func TestParseNoStartElement(t *testing.T) {
+	// Non-empty but contains no start element; rootElement hits EOF first.
+	_, err := Parse(strings.NewReader("<!-- just a comment -->"))
+	if err == nil {
+		t.Fatal("expected an error when there is no root element")
+	}
+}
+
+// errReader fails on the first read, exercising the io.ReadAll error path.
+type errReader struct{}
+
+func (errReader) Read([]byte) (int, error) { return 0, errors.New("boom") }
+
+func TestParseReadError(t *testing.T) {
+	if _, err := Parse(errReader{}); err == nil {
+		t.Fatal("expected a read error to propagate")
 	}
 }

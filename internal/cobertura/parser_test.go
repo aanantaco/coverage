@@ -1,6 +1,9 @@
 package cobertura
 
 import (
+	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -88,5 +91,61 @@ func TestParseMalformedXML(t *testing.T) {
 	_, err := Parse(strings.NewReader("<coverage><not-closed>"))
 	if err == nil {
 		t.Fatal("expected error for malformed xml")
+	}
+}
+
+func TestParseFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "coverage-x.xml")
+	doc := `<coverage><packages><package><classes>
+	  <class filename="a.go"><lines><line number="1" hits="2"/></lines></class>
+	</classes></package></packages></coverage>`
+	if err := os.WriteFile(path, []byte(doc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	report, err := ParseFile(path)
+	if err != nil {
+		t.Fatalf("ParseFile: %v", err)
+	}
+	if len(report.Classes) != 1 || report.Classes[0].Filename != "a.go" {
+		t.Errorf("unexpected report: %+v", report)
+	}
+}
+
+func TestParseFileMissing(t *testing.T) {
+	if _, err := ParseFile(filepath.Join(t.TempDir(), "nope.xml")); err == nil {
+		t.Fatal("expected an error for a missing file")
+	}
+}
+
+// errReader fails on the first read, exercising the io.ReadAll error path.
+type errReader struct{}
+
+func (errReader) Read([]byte) (int, error) { return 0, errors.New("boom") }
+
+func TestParseReadError(t *testing.T) {
+	if _, err := Parse(errReader{}); err == nil {
+		t.Fatal("expected a read error to propagate")
+	}
+}
+
+// TestParseConditionCoverageMalformedShapes exercises the parens-but-no-slash
+// and non-numeric branches of parseConditionCoverage — both must yield no
+// branch contribution rather than an error.
+func TestParseConditionCoverageMalformedShapes(t *testing.T) {
+	const doc = `<coverage><packages><package><classes>
+	  <class filename="b.go"><lines>
+	    <line number="1" hits="1" branch="true" condition-coverage="50% (12)"/>
+	    <line number="2" hits="1" branch="true" condition-coverage="50% (a/b)"/>
+	    <line number="3" hits="1" branch="true" condition-coverage="50% )1/2("/>
+	  </lines></class>
+	</classes></package></packages></coverage>`
+	report, err := Parse(strings.NewReader(doc))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	for i, ln := range report.Classes[0].Lines {
+		if ln.BranchesTotal != 0 || ln.BranchesCovered != 0 {
+			t.Errorf("line %d: expected no branch data, got %+v", i+1, ln)
+		}
 	}
 }

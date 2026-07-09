@@ -42,25 +42,98 @@ inputs:
     required: false
     default: ""
   go-version:
-    description: Go version used to build the tool.
+    description: >-
+      Go version for the fallback build (used only when a prebuilt binary can't
+      be downloaded, e.g. a loose ref instead of a full commit SHA).
     required: false
     default: "1.26"
 
 runs:
   using: composite
   steps:
-    - name: Set up Go
-      uses: actions/setup-go@v6
+    # When the Action is pinned by a full commit SHA (the recommended usage), the
+    # matching per-commit prerelease has a prebuilt binary — download it, no Go
+    # toolchain required. For a loose pin (branch/tag) or if the download is
+    # unavailable, fall back to building from this Action's own checked-out
+    # source. Either way the pin selects the exact tool version.
+    - name: Resolve coverage binary
+      id: resolve
+      shell: bash
+      env:
+        ACTION_REF: ${{ github.action_ref }}
+      run: |
+        set -euo pipefail
+        bin="${RUNNER_TEMP}/coverage"
+
+        # A per-commit prerelease exists only for a full 40-hex commit SHA.
+        if [[ ! "${ACTION_REF:-}" =~ ^[0-9a-fA-F]{40}$ ]]; then
+          echo "Action not pinned by a full commit SHA (ref='${ACTION_REF:-}'); building from source." >&2
+          echo "resolved=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        short="${ACTION_REF:0:7}"
+
+        case "$RUNNER_OS" in
+          Linux) os=linux; ext=tar.gz; binname=coverage ;;
+          macOS) os=darwin; ext=tar.gz; binname=coverage ;;
+          Windows) os=windows; ext=zip; binname=coverage.exe ;;
+          *) echo "Unsupported RUNNER_OS='$RUNNER_OS'; building from source." >&2
+             echo "resolved=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+        esac
+        case "$RUNNER_ARCH" in
+          X64) arch=amd64 ;;
+          ARM64) arch=arm64 ;;
+          *) echo "Unsupported RUNNER_ARCH='$RUNNER_ARCH'; building from source." >&2
+             echo "resolved=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+        esac
+
+        asset="coverage_0.0.0-${short}_${os}_${arch}.${ext}"
+        base="https://github.com/aanantaco/coverage/releases/download/sha-${short}"
+        tmp="$(mktemp -d)"
+
+        if ! curl -fsSL -o "${tmp}/${asset}" "${base}/${asset}"; then
+          echo "No prebuilt binary at ${base}/${asset}; building from source." >&2
+          echo "resolved=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        # Verify the checksum when a checksum tool is available (best-effort on
+        # the tool's presence, but a mismatch is always fatal).
+        if curl -fsSL -o "${tmp}/checksums.txt" "${base}/checksums.txt"; then
+          line="$(grep " ${asset}\$" "${tmp}/checksums.txt" || true)"
+          if [ -n "$line" ]; then
+            if command -v sha256sum >/dev/null 2>&1; then
+              ( cd "$tmp" && printf '%s\n' "$line" | sha256sum -c - )
+            elif command -v shasum >/dev/null 2>&1; then
+              ( cd "$tmp" && printf '%s\n' "$line" | shasum -a 256 -c - )
+            else
+              echo "No checksum tool found; skipping verification." >&2
+            fi
+          fi
+        fi
+
+        if [ "$ext" = zip ]; then
+          unzip -q -o "${tmp}/${asset}" -d "$tmp"
+        else
+          tar -xzf "${tmp}/${asset}" -C "$tmp"
+        fi
+        mv "${tmp}/${binname}" "$bin"
+        chmod +x "$bin"
+        echo "Using prebuilt coverage ${short} (${os}/${arch})." >&2
+        echo "resolved=true" >> "$GITHUB_OUTPUT"
+
+    - name: Set up Go (fallback build)
+      if: steps.resolve.outputs.resolved != 'true'
+      uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
       with:
         go-version: ${{ inputs.go-version }}
         cache: false
 
-    # Build from THIS action's own checked-out source, so pinning the action by
-    # commit SHA (uses: aanantaco/coverage@<sha>) pins the exact tool version.
-    - name: Build coverage
+    - name: Build coverage (fallback build)
+      if: steps.resolve.outputs.resolved != 'true'
       shell: bash
       working-directory: ${{ github.action_path }}
-      run: go build -o "${{ runner.temp }}/coverage" ./cmd/coverage
+      run: go build -o "${RUNNER_TEMP}/coverage" ./cmd/coverage
 
     - name: Render coverage summary
       shell: bash
@@ -71,4 +144,4 @@ runs:
         [ -n "${{ inputs.baseline }}" ]     && args+=(--baseline "${{ inputs.baseline }}")
         [ -n "${{ inputs.fail-on-drop }}" ] && args+=(--fail-on-drop "${{ inputs.fail-on-drop }}")
         [ -n "${{ inputs.emit-json }}" ]    && args+=(--emit-json "${{ inputs.emit-json }}")
-        "${{ runner.temp }}/coverage" "${args[@]}"
+        "${RUNNER_TEMP}/coverage" "${args[@]}"

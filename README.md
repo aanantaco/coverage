@@ -62,18 +62,32 @@ Or use the composite GitHub Action, **pinned to a commit SHA** (recommended):
 - uses: aanantaco/coverage@4dde4d44807a0b7d29358bb9417768b4a7cc1960
 ```
 
-The Action builds the tool from its own source at that SHA, so the pin selects
-the exact tool version. (`go install …@<sha>` works the same way for the CLI.)
+When pinned by a full commit SHA, the Action **downloads the prebuilt binary**
+for that commit — no Go toolchain on your runner, which matters for non-Go
+repos. With a loose ref (a branch or tag) it falls back to building from the
+Action's own source. Either way the pin selects the exact tool version.
+(`go install …@<sha>` works the same way for the CLI.)
 
 ### Binaries
 
 There are no version tags. Every merge to `main` runs the `release` job in
 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml), which cross-compiles
-`coverage` (linux/macOS/Windows × amd64/arm64) with GoReleaser and uploads the
-archives + `checksums.txt` as a workflow artifact named
-`coverage-binaries-<sha>`. Non-Go projects can download that artifact instead of
-installing a Go toolchain. Archives are versioned by the commit SHA
-(`coverage_0.0.0-<shortsha>_<os>_<arch>`).
+`coverage` (linux/macOS/Windows × amd64/arm64) with GoReleaser and publishes the
+archives + `checksums.txt` as a **per-commit prerelease** tagged `sha-<shortsha>`
+(and, for the run itself, a `coverage-binaries-<sha>` workflow artifact).
+Archives are versioned by the commit SHA
+(`coverage_0.0.0-<shortsha>_<os>_<arch>`), e.g.:
+
+```bash
+SHA=<short-commit-sha>   # 7 chars, e.g. 9d36b21
+curl -fsSL -O "https://github.com/aanantaco/coverage/releases/download/sha-${SHA}/coverage_0.0.0-${SHA}_linux_amd64.tar.gz"
+tar -xzf coverage_0.0.0-${SHA}_linux_amd64.tar.gz
+./coverage version
+```
+
+The prereleases are what the composite Action downloads, so non-Go projects need
+no Go toolchain. (They're marked *prerelease*, so they don't clutter the
+"Latest release" slot.)
 
 ## Usage
 

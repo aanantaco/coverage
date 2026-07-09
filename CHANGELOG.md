@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Per-commit prereleases with prebuilt binaries.** Each merge to `main` now
+  publishes a GitHub **prerelease** tagged `sha-<shortsha>` carrying the
+  GoReleaser archives (linux/macOS/Windows × amd64/arm64) and `checksums.txt`, in
+  addition to the existing workflow artifact. This gives a stable, SHA-addressed
+  download URL — `.../releases/download/sha-<shortsha>/coverage_0.0.0-<shortsha>_<os>_<arch>.<ext>`
+  — for non-Go consumers who don't want to install a toolchain. Marked prerelease
+  so the "Latest release" slot stays empty (no version tags; still pin by SHA).
+
 - **Community health files.** `CONTRIBUTING.md` (build/test/lint workflow and the
   repo's conventions), `SECURITY.md` (private vulnerability reporting via GitHub
   Security Advisories), a `.github/dependabot.yml` that keeps the Go dependency
@@ -61,6 +69,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Composite Action downloads a prebuilt binary (no Go toolchain).** When
+  pinned by a full commit SHA (the recommended usage), the Action fetches the
+  prebuilt binary from the matching per-commit prerelease and verifies its
+  checksum — so a TypeScript/Python/Rust/C# repo no longer installs Go just to
+  render a report. It falls back to building from the Action's own source for a
+  loose ref (branch/tag) or if the download is unavailable, so behavior is never
+  worse than before. `setup-go` inside the Action is now SHA-pinned too, and its
+  `go-version` input is documented as fallback-only.
 - **Example Action refs now show a real pinned SHA.** The `uses:
   aanantaco/coverage@…` snippets in the README and `examples/coverage.yml` point
   at a concrete commit SHA instead of a `<commit-sha>` placeholder (the `init`

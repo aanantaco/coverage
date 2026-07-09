@@ -21,8 +21,13 @@ builds:
     goarch:
       - amd64
       - arm64
+    # Stamp the version/commit into the binary so `coverage version` reports the
+    # exact build. In snapshot mode .Version is "0.0.0-<shortcommit>" and
+    # .FullCommit is the SHA consumers pin by.
     ldflags:
       - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .FullCommit }}
     mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:

@@ -6,24 +6,50 @@
 //
 //	coverage --input <dir> [flags]   render a coverage report (default)
 //	coverage init [flags]            scaffold a workflow + config for this repo
+//	coverage version                 print the build version and commit
 package main
 
 import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/aanantaco/coverage/internal/app"
 	"github.com/aanantaco/coverage/internal/scaffold"
 )
 
+// version and commit are stamped at build time via -ldflags -X (see
+// .goreleaser.yaml). A plain `go build` leaves the defaults, so a
+// locally-built binary reports "dev".
+var (
+	version = "dev"
+	commit  = ""
+)
+
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "init" {
-		runInit(os.Args[2:])
-		return
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "init":
+			runInit(os.Args[2:])
+			return
+		case "version", "--version", "-version":
+			printVersion(os.Stdout)
+			return
+		}
 	}
 	runReport(os.Args[1:])
+}
+
+// printVersion writes the build version, appending the commit SHA when it was
+// stamped in — the SHA is the thing consumers pin releases by.
+func printVersion(w io.Writer) {
+	if commit != "" {
+		fmt.Fprintf(w, "coverage %s (%s)\n", version, commit)
+		return
+	}
+	fmt.Fprintf(w, "coverage %s\n", version)
 }
 
 func runReport(args []string) {

@@ -89,6 +89,9 @@ coverage --input ./coverage-artifacts --output "$GITHUB_STEP_SUMMARY"
 
 CLI flags override `coverage.yaml`, which overrides built-in defaults.
 
+`coverage version` prints the build version and the commit SHA it was built
+from — handy for confirming which SHA-pinned build you're running.
+
 ### Output formats
 
 - **Markdown** (default) — for `$GITHUB_STEP_SUMMARY`. Written in append mode.

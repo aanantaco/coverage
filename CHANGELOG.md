@@ -61,6 +61,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Example Action refs now show a real pinned SHA.** The `uses:
+  aanantaco/coverage@…` snippets in the README and `examples/coverage.yml` point
+  at a concrete commit SHA instead of a `<commit-sha>` placeholder (the `init`
+  scaffold and `docs/INIT.md` keep the placeholder, since those ask consumers to
+  choose their own reviewed SHA).
 - **CI actions are SHA-pinned.** All third-party GitHub Actions
   (`actions/checkout`, `actions/setup-go`, `actions/upload-artifact`,
   `goreleaser/goreleaser-action`) are pinned to commit SHAs with a version

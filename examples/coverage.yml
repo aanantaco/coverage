@@ -84,8 +84,8 @@ jobs:
 
       # Option A — the composite Action (simplest). Pin to a commit SHA; the
       # action builds from its own source at that SHA, so the pin selects the
-      # exact tool version.
-      - uses: aanantaco/coverage@<commit-sha>
+      # exact tool version. (Latest main shown — review and bump as needed.)
+      - uses: aanantaco/coverage@4dde4d44807a0b7d29358bb9417768b4a7cc1960
         with:
           input: ./cov
           output: $GITHUB_STEP_SUMMARY

@@ -43,6 +43,9 @@ checksum:
   name_template: checksums.txt
 
 # No tags are cut, so snapshot builds key the version to the commit SHA. This
-# flows into the archive name_template ({{ .Version }}).
+# flows into the archive name_template ({{ .Version }}). A fixed first-7 slice of
+# the full commit (rather than git's variable-length abbreviation) keeps the
+# archive name in lockstep with the `sha-<shortsha>` release tag and the short
+# SHA the composite Action derives from its pinned ref.
 snapshot:
-  version_template: "0.0.0-{{ .ShortCommit }}"
+  version_template: '0.0.0-{{ printf "%.7s" .FullCommit }}'

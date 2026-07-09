@@ -151,13 +151,17 @@ jobs:
   # ==========================================================================
   # Runs on every merge to main, after build/test and the security scan pass.
   # GoReleaser cross-compiles the `coverage` binary (snapshot mode, keyed to the
-  # commit SHA) and uploads the archives + checksums as a workflow artifact.
-  # No git tags and no GitHub Release — consumers pin by commit SHA.
+  # commit SHA), and the archives are published two ways: as a workflow artifact
+  # (for this run) and as a per-commit GitHub prerelease tagged `sha-<shortsha>`
+  # (a stable download the composite Action fetches instead of building from
+  # source). No version tags — consumers still pin by commit SHA.
   release:
     name: Build release binaries
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [build, security-scan]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the per-commit prerelease
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -184,3 +188,26 @@ jobs:
             dist/checksums.txt
           if-no-files-found: error
           retention-days: 90
+
+      - name: Publish per-commit prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          short="${GITHUB_SHA:0:7}"
+          tag="sha-${short}"
+          notes="Per-commit build of \`coverage\` at \`${GITHUB_SHA}\`.
+
+          Prebuilt binaries (linux/macOS/Windows × amd64/arm64) with \`checksums.txt\`.
+          The composite Action downloads these when pinned by this commit SHA; you
+          can also download them directly. Pin by commit SHA — this is a prerelease,
+          not a stable version tag."
+          # Idempotent: create the prerelease if absent, else replace its assets
+          # (e.g. on a re-run of the same commit).
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/*.tar.gz dist/*.zip dist/checksums.txt --clobber
+          else
+            gh release create "$tag" dist/*.tar.gz dist/*.zip dist/checksums.txt \
+              --prerelease \
+              --title "coverage @ ${short}" \
+              --notes "$notes"
+          fi

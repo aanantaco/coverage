@@ -83,9 +83,10 @@ jobs:
         with: { pattern: tests-*, path: ./cov, merge-multiple: true }
 
       # Option A — the composite Action (simplest). Pin to a commit SHA; the
-      # action builds from its own source at that SHA, so the pin selects the
-      # exact tool version. (Latest main shown — review and bump as needed.)
-      - uses: aanantaco/coverage@4dde4d44807a0b7d29358bb9417768b4a7cc1960
+      # action downloads the prebuilt binary for that commit (no Go toolchain),
+      # falling back to build-from-source for a loose ref. (Latest main shown —
+      # review and bump as needed.)
+      - uses: aanantaco/coverage@942b0be7af719b81fb5033591c80e065b0c9179e
         with:
           input: ./cov
           output: $GITHUB_STEP_SUMMARY

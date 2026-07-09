@@ -59,7 +59,7 @@ Or use the composite GitHub Action, **pinned to a commit SHA** (recommended):
 
 ```yaml
 # Pin to a reviewed commit SHA (latest main shown — check for a newer one).
-- uses: aanantaco/coverage@4dde4d44807a0b7d29358bb9417768b4a7cc1960
+- uses: aanantaco/coverage@942b0be7af719b81fb5033591c80e065b0c9179e
 ```
 
 When pinned by a full commit SHA, the Action **downloads the prebuilt binary**
@@ -131,26 +131,71 @@ Both formats are rendered from templates in
 | Workspace id | the `<id>` in the filenames; may contain dashes | `shared-widget` |
 | Input dir | all `coverage-*.xml` + `tests-*.xml` flattened together | `./coverage-artifacts` |
 
-## CI in one job
+## Add it to your workflow
 
-Each test job uploads two artifacts; one downstream job runs the tool once. Full
-copy-paste workflow: [`examples/coverage.yml`](./examples/coverage.yml).
+Three moving parts:
+
+1. **Each project's test job** emits two files — `coverage-<id>.xml` (Cobertura)
+   and `tests-<id>.xml` (JUnit) — and uploads them as artifacts. The test command
+   is language-specific; see the [per-language guides](./docs/README.md).
+2. **One report job** downloads every `coverage-*` / `tests-*` artifact into a
+   single directory and runs the Action once.
+3. **Pin the Action by commit SHA.** It then downloads a prebuilt binary for that
+   commit — no Go toolchain on your runner — falling back to build-from-source for
+   a loose ref (branch/tag).
 
 ```yaml
-report:
-  needs: [test-web, test-api]
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v6
-    - uses: actions/download-artifact@v8
-      with: { pattern: coverage-*, path: ./cov, merge-multiple: true }
-    - uses: actions/download-artifact@v8
-      with: { pattern: tests-*, path: ./cov, merge-multiple: true }
-    - uses: aanantaco/coverage@4dde4d44807a0b7d29358bb9417768b4a7cc1960 # pin to a reviewed SHA
-      with:
-        input: ./cov
-        output: $GITHUB_STEP_SUMMARY
+name: Coverage
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # One test job per project. Swap the test step for your language's command
+  # (see docs/) so it produces coverage-<id>.xml + tests-<id>.xml.
+  test-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      # e.g. Vitest — other frameworks in docs/TYPESCRIPT.md:
+      - run: |
+          npx vitest run --coverage \
+            --coverage.reporter=cobertura \
+            --reporter=junit --outputFile.junit=tests-web.xml
+          cp coverage/cobertura-coverage.xml coverage-web.xml
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: coverage-web, path: coverage-web.xml }
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: tests-web, path: tests-web.xml }
+
+  # One report job aggregates everything and writes the run's Summary tab.
+  report:
+    needs: [test-web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with: { pattern: coverage-*, path: ./cov, merge-multiple: true }
+      - uses: actions/download-artifact@v8
+        with: { pattern: tests-*, path: ./cov, merge-multiple: true }
+      - uses: aanantaco/coverage@942b0be7af719b81fb5033591c80e065b0c9179e # pin to a reviewed SHA
+        with:
+          input: ./cov
+          output: $GITHUB_STEP_SUMMARY
+          # ignore: .coverageignore     # optional
+          # baseline: baseline.json     # optional, for Δ columns
+          # fail-on-drop: "0.5"         # optional, fail on >0.5pp total drop
 ```
+
+Don't want to hand-write it? **`coverage init`** scaffolds this whole structure
+for your detected languages — see [docs/INIT.md](./docs/INIT.md). The Action's
+inputs mirror the [CLI flags](#usage); the full annotated workflow is
+[`examples/coverage.yml`](./examples/coverage.yml).
 
 ## Optional config
 

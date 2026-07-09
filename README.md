@@ -58,7 +58,8 @@ go install github.com/aanantaco/coverage/cmd/coverage@latest
 Or use the composite GitHub Action, **pinned to a commit SHA** (recommended):
 
 ```yaml
-- uses: aanantaco/coverage@<commit-sha>
+# Pin to a reviewed commit SHA (latest main shown — check for a newer one).
+- uses: aanantaco/coverage@4dde4d44807a0b7d29358bb9417768b4a7cc1960
 ```
 
 The Action builds the tool from its own source at that SHA, so the pin selects
@@ -131,7 +132,7 @@ report:
       with: { pattern: coverage-*, path: ./cov, merge-multiple: true }
     - uses: actions/download-artifact@v8
       with: { pattern: tests-*, path: ./cov, merge-multiple: true }
-    - uses: aanantaco/coverage@<commit-sha>
+    - uses: aanantaco/coverage@4dde4d44807a0b7d29358bb9417768b4a7cc1960 # pin to a reviewed SHA
       with:
         input: ./cov
         output: $GITHUB_STEP_SUMMARY

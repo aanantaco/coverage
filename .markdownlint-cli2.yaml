@@ -11,5 +11,7 @@ globs:
   - "**/*.md"
 ignores:
   - "node_modules"
+  # GoReleaser build output (present after a local `goreleaser release`).
+  - "dist"
   # Golden test fixtures, not documentation.
   - "internal/render/testdata"

@@ -54,11 +54,12 @@ inputs:
 runs:
   using: composite
   steps:
-    # When the Action is pinned by a full commit SHA (the recommended usage), the
-    # matching per-commit prerelease has a prebuilt binary — download it, no Go
-    # toolchain required. For a loose pin (branch/tag) or if the download is
-    # unavailable, fall back to building from this Action's own checked-out
-    # source. Either way the pin selects the exact tool version.
+    # When the Action is pinned by a full commit SHA (recommended) or a version
+    # tag (vX.Y.Z, the usual Marketplace form), a matching release has a prebuilt
+    # binary — download it, no Go toolchain required. For any other ref (a branch,
+    # a moving tag) or if the download is unavailable, fall back to building from
+    # this Action's own checked-out source. Either way the pin selects the exact
+    # tool version.
     - name: Resolve coverage binary
       id: resolve
       shell: bash
@@ -68,13 +69,19 @@ runs:
         set -euo pipefail
         bin="${RUNNER_TEMP}/coverage"
 
-        # A per-commit prerelease exists only for a full 40-hex commit SHA.
-        if [[ ! "${ACTION_REF:-}" =~ ^[0-9a-fA-F]{40}$ ]]; then
-          echo "Action not pinned by a full commit SHA (ref='${ACTION_REF:-}'); building from source." >&2
+        # Map the pinned ref to a published release and its archive version:
+        #   full 40-hex SHA -> per-commit prerelease  sha-<short> / 0.0.0-<short>
+        #   version tag vX.Y.Z -> version release      vX.Y.Z     / X.Y.Z
+        ref="${ACTION_REF:-}"
+        if [[ "$ref" =~ ^[0-9a-fA-F]{40}$ ]]; then
+          tag="sha-${ref:0:7}"; ver="0.0.0-${ref:0:7}"
+        elif [[ "$ref" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          tag="$ref"; ver="${ref#v}"
+        else
+          echo "Action ref '$ref' is not a commit SHA or vX.Y.Z tag; building from source." >&2
           echo "resolved=false" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-        short="${ACTION_REF:0:7}"
 
         case "$RUNNER_OS" in
           Linux) os=linux; ext=tar.gz; binname=coverage ;;
@@ -90,8 +97,8 @@ runs:
              echo "resolved=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
         esac
 
-        asset="coverage_0.0.0-${short}_${os}_${arch}.${ext}"
-        base="https://github.com/aanantaco/coverage/releases/download/sha-${short}"
+        asset="coverage_${ver}_${os}_${arch}.${ext}"
+        base="https://github.com/aanantaco/coverage/releases/download/${tag}"
         tmp="$(mktemp -d)"
 
         if ! curl -fsSL -o "${tmp}/${asset}" "${base}/${asset}"; then
@@ -122,7 +129,7 @@ runs:
         fi
         mv "${tmp}/${binname}" "$bin"
         chmod +x "$bin"
-        echo "Using prebuilt coverage ${short} (${os}/${arch})." >&2
+        echo "Using prebuilt coverage ${tag} (${os}/${arch})." >&2
         echo "resolved=true" >> "$GITHUB_OUTPUT"
 
     - name: Set up Go (fallback build)

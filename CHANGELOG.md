@@ -8,6 +8,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Version releases on `v*` tags (Marketplace anchor).** Pushing a `vX.Y.Z` tag
+  now runs GoReleaser in release mode and publishes a normal GitHub Release with
+  `coverage_X.Y.Z_<os>_<arch>` archives + `checksums.txt`. This anchors the
+  GitHub Marketplace listing with a conventional version; day-to-day pinning
+  stays SHA-based. The composite Action downloads the prebuilt binary for a
+  version-tag pin (`uses: aanantaco/coverage@vX.Y.Z`) too — so Marketplace users,
+  who typically pin by tag, also skip the Go toolchain.
 - **Per-commit prereleases with prebuilt binaries.** Each merge to `main` now
   publishes a GitHub **prerelease** tagged `sha-<shortsha>` carrying the
   GoReleaser archives (linux/macOS/Windows × amd64/arm64) and `checksums.txt`, in

@@ -62,11 +62,11 @@ Or use the composite GitHub Action, **pinned to a commit SHA** (recommended):
 - uses: aanantaco/coverage@942b0be7af719b81fb5033591c80e065b0c9179e
 ```
 
-When pinned by a full commit SHA, the Action **downloads the prebuilt binary**
-for that commit — no Go toolchain on your runner, which matters for non-Go
-repos. With a loose ref (a branch or tag) it falls back to building from the
-Action's own source. Either way the pin selects the exact tool version.
-(`go install …@<sha>` works the same way for the CLI.)
+When pinned by a full commit SHA (or a version tag like `@v0.1.0`), the Action
+**downloads the prebuilt binary** — no Go toolchain on your runner, which matters
+for non-Go repos. With any other ref (a branch or moving tag) it falls back to
+building from the Action's own source. Either way the pin selects the exact tool
+version. (`go install …@<sha>` works the same way for the CLI.)
 
 ### Binaries
 

@@ -69,6 +69,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Renamed the Action to "Cobertura + JUnit Coverage Report"** so its
+  GitHub Marketplace listing name is globally unique. This is only the display
+  name — the Action is still referenced as `uses: aanantaco/coverage@<sha>`.
 - **README: a complete "Add it to your workflow" guide.** Replaces the minimal
   report-job snippet with a full two-job example (a test job that emits the
   artifacts plus the report job that runs the Action), the three moving parts

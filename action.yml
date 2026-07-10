@@ -1,8 +1,11 @@
-name: Coverage Report
+# The Marketplace listing name must be globally unique; this descriptive name
+# avoids collisions. It does not change how the Action is referenced
+# (uses: aanantaco/coverage@<sha>).
+name: Cobertura + JUnit Coverage Report
 description: >-
-  Aggregate Cobertura coverage and JUnit test-result artifacts into a single
-  Markdown summary for the GitHub Actions run, with optional regression
-  detection against a baseline.
+  Aggregate Cobertura coverage and JUnit test-result artifacts from every
+  project in a repo into a single Markdown (or HTML) report for the GitHub
+  Actions run, with optional regression detection against a baseline.
 author: aanantaco
 
 branding:

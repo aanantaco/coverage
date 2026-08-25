@@ -10,8 +10,7 @@ type viewRow struct {
 	IsTotal  bool
 	IsFolder bool
 
-	Tests    string // summary rows only ("—" or a number)
-	HasTests bool
+	Tests string // summary rows only ("—" or a number)
 
 	LinesCovered, LinesValid       int
 	BranchesCovered, BranchesValid int
@@ -54,7 +53,7 @@ func buildView(s Summary) view {
 			anyTests = true
 		}
 		v.Summary = append(v.Summary, viewRow{
-			Label: w.DisplayName, Tests: testsCell, HasTests: w.HasTests,
+			Label: w.DisplayName, Tests: testsCell,
 			LinesCovered: w.LinesCovered, LinesValid: w.LinesValid,
 			BranchesCovered: w.BranchesCovered, BranchesValid: w.BranchesValid,
 			Delta: w.Delta,
@@ -86,7 +85,7 @@ func buildView(s Summary) view {
 		totalTests = itoa(tTests)
 	}
 	v.Summary = append(v.Summary, viewRow{
-		Label: "Total", IsTotal: true, Tests: totalTests, HasTests: anyTests,
+		Label: "Total", IsTotal: true, Tests: totalTests,
 		LinesCovered: tLC, LinesValid: tLV,
 		BranchesCovered: tBC, BranchesValid: tBV,
 		Delta: s.TotalDelta,

@@ -8,6 +8,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Split test suites merge into one workspace row.** Multiple
+  `coverage-<id>.<suite>.xml` (and `tests-<id>.<suite>.xml`) files with the
+  same base id are now combined automatically: coverage is unioned per source
+  line via `cobertura.Merge` (a line counts as hit if any suite executed it),
+  and JUnit test counts are summed. A workspace exercised by unit +
+  integration jobs — or a language-runtime matrix — reports as one row instead
+  of one row per suite. Single-file usage (`coverage-web.xml`) is unchanged;
+  the merge only kicks in when a `.<suite>` suffix is present, and dashed ids
+  like `shared-widget` still resolve as before. Any `coverage.yaml` workspace
+  entry keyed on the base id applies to every same-id artifact. See
+  [Splitting a workspace across test suites](README.md#splitting-a-workspace-across-test-suites).
 - **`cobertura.Merge` — union of parsed reports.** Combines multiple `*Report`
   values into one by unioning classes that share a filename (first-seen order
   preserved) and, within a class, unioning lines by number: `Hits` is the max

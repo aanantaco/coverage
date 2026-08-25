@@ -263,3 +263,77 @@ func TestRunUnknownFormatErrors(t *testing.T) {
 		t.Fatal("expected error for unknown format")
 	}
 }
+
+// Same workspace id split across two coverage artifacts (unit + integration
+// suites) merges into one row with per-line hits unioned.
+func TestRunMergesSplitSuitesUnderOneWorkspace(t *testing.T) {
+	dir := t.TempDir()
+	// Same file, three lines. Unit hits lines 1 and 2; integration hits lines 2
+	// and 3. Merged: 3/3 covered.
+	write(t, dir, "coverage-web.unit.xml", coverageDoc(map[string][]int{"src/a.ts": {1, 1, 0}}))
+	write(t, dir, "coverage-web.integration.xml", coverageDoc(map[string][]int{"src/a.ts": {0, 1, 1}}))
+	// And the corresponding split test artifacts — counts should sum.
+	write(t, dir, "tests-web.unit.xml", `<testsuites tests="3"/>`)
+	write(t, dir, "tests-web.integration.xml", `<testsuites tests="5"/>`)
+
+	out, err := run(t, Options{Input: dir})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !strings.Contains(out, "| web | 8 | 3 / 3 | 100.0% |") {
+		t.Errorf("expected merged web row (8 tests, 3/3 lines), got:\n%s", out)
+	}
+	if strings.Count(out, "| web ") != 1 {
+		t.Errorf("expected exactly one web row, got:\n%s", out)
+	}
+}
+
+// A dashed id (no dot) is untouched — split-suite parsing only kicks in when a
+// dot appears in the id remainder.
+func TestRunPreservesDashedIDs(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "coverage-shared-widget.xml", coverageDoc(map[string][]int{"src/w.ts": {1, 1}}))
+	write(t, dir, "tests-shared-widget.xml", `<testsuites tests="4"/>`)
+
+	out, err := run(t, Options{Input: dir})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !strings.Contains(out, "| shared-widget | 4 | 2 / 2 | 100.0% |") {
+		t.Errorf("dashed id should not be split at the dash, got:\n%s", out)
+	}
+}
+
+// A workspaces config entry keyed on the base id applies to every same-id
+// artifact regardless of suffix.
+func TestRunSplitSuitesShareConfig(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "coverage-worker.unit.xml", coverageDoc(map[string][]int{
+		"github.com/acme/repo/services/worker/logic/a.go": {1, 1},
+	}))
+	write(t, dir, "coverage-worker.integration.xml", coverageDoc(map[string][]int{
+		"github.com/acme/repo/services/worker/logic/b.go": {1},
+	}))
+	cfgPath := filepath.Join(dir, "coverage.yaml")
+	write(t, dir, "coverage.yaml", `
+workspaces:
+  worker:
+    strip_prefix: github.com/acme/repo/services/worker/
+`)
+
+	out, err := run(t, Options{
+		Input: dir, ConfigPath: cfgPath, ConfigSet: true,
+	})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	// 2 lines from unit + 1 line from integration, all covered.
+	if !strings.Contains(out, "| worker | — | 3 / 3 | 100.0% |") {
+		t.Errorf("split-suite config bridging failed, got:\n%s", out)
+	}
+	// Folder grouping should reflect the stripped rel path, proving strip_prefix
+	// was applied to both merged files.
+	if !strings.Contains(out, "└ logic") {
+		t.Errorf("expected stripped folder grouping for merged files:\n%s", out)
+	}
+}

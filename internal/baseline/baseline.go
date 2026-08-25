@@ -187,7 +187,10 @@ func pct(covered, valid int) float64 {
 	if valid == 0 {
 		return 0
 	}
-	return float64(covered) / float64(valid) * 100
+	// Multiply before dividing so whole-percent results are exact — e.g. pct(90,100)
+	// gives 90.0, not 90.00000000000001. Divide-first amplifies the rounding of
+	// non-representable fractions like 0.9 by another ×100.
+	return float64(covered) * 100 / float64(valid)
 }
 
 func roundPP(v float64) float64 {

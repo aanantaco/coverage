@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`cobertura.Merge` — union of parsed reports.** Combines multiple `*Report`
+  values into one by unioning classes that share a filename (first-seen order
+  preserved) and, within a class, unioning lines by number: `Hits` is the max
+  across inputs, `Branch` is OR'd, and `BranchesTotal`/`BranchesCovered` take
+  the max. The branch-covered max is an approximation of the true union
+  (Cobertura doesn't carry the per-branch mask needed for exact union) — always
+  `>=` any single input and `<=` the true union. Nil entries in the input are
+  skipped; merged classes have lines sorted by number for stable diffs.
 - **Version releases on `v*` tags (Marketplace anchor).** Pushing a `vX.Y.Z` tag
   now runs GoReleaser in release mode and publishes a normal GitHub Release with
   `coverage_X.Y.Z_<os>_<arch>` archives + `checksums.txt`. This anchors the

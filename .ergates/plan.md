@@ -11,7 +11,10 @@
 - [x] S3: Verify with `go build ./...`, `go test ./...`, `go vet`, staticcheck
       — `go build ./...` ok, `go vet ./...` ok, `go test ./...` 9/9 packages
       ok, `gofmt -l .` empty, `staticcheck ./...` exit 0
-- [ ] S4: PR description listing deletions + human-review candidates  ← next
+- [x] S4: PR description listing deletions + human-review candidates
+      — final message lists both deletions and the four left-in-place
+      candidates; `git diff main...HEAD --stat` shows only baseline.go,
+      view.go and this plan touched
 
 ## Criteria map
 - AC1 "`go build ./...` passes" → S3

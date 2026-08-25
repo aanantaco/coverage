@@ -365,8 +365,7 @@ Sigstore/cosign via GoReleaser) rather than a same-origin checksum.
   the upstream Go advisories are XSS-class
 - **Source:** `govulncheck ./...`
 - **Location:** `internal/render/render.go:62` (all five traces),
-  additionally `internal/render/render.go:39` and
-  `internal/scaffold/scaffold.go:52` for `GO-2026-4865`
+  additionally `internal/render/render.go:39` for `GO-2026-4865`
 
 Five of the six advisories govulncheck reports are `html/template` escaper
 bypasses, all reached through `render.HTML` calling `Template.Execute`:

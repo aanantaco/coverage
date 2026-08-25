@@ -204,31 +204,44 @@ func aggregateCoverage(opts Options, cfg *config.Config, matcher ignore.Matcher)
 	}
 	sort.Strings(files)
 
-	var workspaces []*workspaceAgg
-	excluded := 0
-
+	// Group files by workspace id — multiple coverage-<id>--<suite>.xml files
+	// with the same id are unioned via cobertura.Merge so a workspace split
+	// across test suites renders as one row.
+	var order []string
+	byID := map[string][]*cobertura.Report{}
 	for _, file := range files {
 		id := artifactID(file, "coverage-")
 		if id == "" {
 			continue
 		}
-		wsCfg, configured := cfg.Workspaces[id]
-		if !configured && opts.Verbose {
-			fmt.Fprintf(opts.Stderr, "warning: workspace %q has no config entry; matching with raw filenames\n", id)
-		}
-
 		report, err := cobertura.ParseFile(file)
 		if err != nil {
 			fmt.Fprintf(opts.Stderr, "warning: skipping %q: %v\n", file, err)
 			continue
 		}
+		if _, seen := byID[id]; !seen {
+			order = append(order, id)
+		}
+		byID[id] = append(byID[id], report)
+	}
+
+	var workspaces []*workspaceAgg
+	excluded := 0
+
+	for _, id := range order {
+		wsCfg, configured := cfg.Workspaces[id]
+		if !configured && opts.Verbose {
+			fmt.Fprintf(opts.Stderr, "warning: workspace %q has no config entry; matching with raw filenames\n", id)
+		}
+
+		merged := cobertura.Merge(byID[id])
 
 		ws := &workspaceAgg{
 			id:          id,
 			displayName: cfg.DisplayName(id),
 			folders:     map[string]*folderAgg{},
 		}
-		for _, class := range report.Classes {
+		for _, class := range merged.Classes {
 			rel := stripPrefix(class.Filename, wsCfg.StripPrefix)
 			full := wsCfg.Prefix + rel
 			if matcher.Match(full) {
@@ -281,6 +294,8 @@ func attachTests(opts Options, workspaces []*workspaceAgg) {
 		byID[w.id] = w
 	}
 
+	// Multiple tests-<id>--<suite>.xml files with the same id sum their test
+	// counts, matching the coverage-side merge for split suites.
 	for _, file := range files {
 		id := artifactID(file, "tests-")
 		if id == "" {
@@ -292,7 +307,7 @@ func attachTests(opts Options, workspaces []*workspaceAgg) {
 			continue
 		}
 		if w, ok := byID[id]; ok {
-			w.tests = report.Tests
+			w.tests += report.Tests
 			w.hasTests = true
 		}
 	}
@@ -451,13 +466,23 @@ func resolveFormat(opts Options) (string, error) {
 // --- helpers ---
 
 // artifactID strips a leading prefix and a trailing ".xml" from a path's base
-// name. The id itself may contain dashes.
+// name. The id itself may contain single dashes and dots. A double-dash "--"
+// in the stripped remainder separates the id from an optional suite suffix,
+// so split test suites can upload sibling artifacts (coverage-web--unit.xml,
+// coverage-web--integration.xml) that get merged into one workspace row. The
+// suffix itself is discarded — it only exists so multiple files can share the
+// same id in one input directory. Double-dash is chosen so existing dotted ids
+// like "api.v1" and dashed ids like "shared-widget" remain intact.
 func artifactID(path, prefix string) string {
 	base := filepath.Base(path)
 	if !strings.HasPrefix(base, prefix) || !strings.HasSuffix(base, ".xml") {
 		return ""
 	}
-	return base[len(prefix) : len(base)-len(".xml")]
+	rest := base[len(prefix) : len(base)-len(".xml")]
+	if sep := strings.Index(rest, "--"); sep >= 0 {
+		return rest[:sep]
+	}
+	return rest
 }
 
 func stripPrefix(filename, prefix string) string {

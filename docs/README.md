@@ -9,10 +9,15 @@ Each project produces two files in a shared directory:
 
 | File | Format | Purpose |
 |---|---|---|
-| `coverage-<id>.xml` | Cobertura | line & branch coverage |
-| `tests-<id>.xml` | JUnit | test count (renders `—` if absent) |
+| `coverage-<id>[--<suite>].xml` | Cobertura | line & branch coverage |
+| `tests-<id>[--<suite>].xml` | JUnit | test count (renders `—` if absent) |
 
-`<id>` is any workspace id you choose (may contain dashes).
+`<id>` is any workspace id you choose (may contain single dashes or dots). The
+optional `--<suite>` suffix (double dash) lets a workspace split across
+multiple test jobs (unit + integration, or a matrix) contribute one merged row
+— coverage is unioned per line, test counts are summed. See
+[Splitting a workspace across test suites](../README.md#splitting-a-workspace-across-test-suites)
+in the main README.
 
 ## Per-language how-to guides
 

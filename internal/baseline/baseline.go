@@ -111,7 +111,6 @@ type Comparison struct {
 	// TotalLineDropPP is the magnitude of a total line-% drop (>= 0). Zero when
 	// coverage held or improved, or when a total delta was not computable.
 	TotalLineDropPP float64
-	HasTotalLine    bool
 }
 
 // Compare computes deltas of current versus base.
@@ -124,7 +123,6 @@ func Compare(current, base *Summary) *Comparison {
 	if c.Total.HasLine && c.Total.LinePP < 0 {
 		c.TotalLineDropPP = -c.Total.LinePP
 	}
-	c.HasTotalLine = c.Total.HasLine
 
 	for id, cur := range current.Workspaces {
 		baseWS, ok := base.Workspaces[id]

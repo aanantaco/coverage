@@ -2,10 +2,16 @@
 <!-- ergates:plan v1 -->
 
 ## Sections
-- [ ] S1: Build evidence — staticcheck U1000 + exhaustive git grep census  ← next
-- [ ] S2: Delete demonstrably unreferenced symbols (+ freed imports/branches)
-- [ ] S3: Verify with `go build ./...`, `go test ./...`, `go vet`, staticcheck
-- [ ] S4: PR description listing deletions + human-review candidates
+- [x] S1: Build evidence — staticcheck U1000 + exhaustive git grep census
+      — `staticcheck -checks U1000 ./...` exit 0, no findings; per-symbol
+      `git grep -c` census: no top-level symbol declaration-only or test-only
+- [x] S2: Delete demonstrably unreferenced symbols (+ freed imports/branches)
+      — `git grep -n 'HasTests\|HasTotalLine'` shows no remaining dead field;
+      no import freed, no branch stranded
+- [x] S3: Verify with `go build ./...`, `go test ./...`, `go vet`, staticcheck
+      — `go build ./...` ok, `go vet ./...` ok, `go test ./...` 9/9 packages
+      ok, `gofmt -l .` empty, `staticcheck ./...` exit 0
+- [ ] S4: PR description listing deletions + human-review candidates  ← next
 
 ## Criteria map
 - AC1 "`go build ./...` passes" → S3

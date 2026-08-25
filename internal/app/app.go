@@ -204,7 +204,7 @@ func aggregateCoverage(opts Options, cfg *config.Config, matcher ignore.Matcher)
 	}
 	sort.Strings(files)
 
-	// Group files by workspace id — multiple coverage-<id>.<suite>.xml files
+	// Group files by workspace id — multiple coverage-<id>--<suite>.xml files
 	// with the same id are unioned via cobertura.Merge so a workspace split
 	// across test suites renders as one row.
 	var order []string
@@ -294,7 +294,7 @@ func attachTests(opts Options, workspaces []*workspaceAgg) {
 		byID[w.id] = w
 	}
 
-	// Multiple tests-<id>.<suite>.xml files with the same id sum their test
+	// Multiple tests-<id>--<suite>.xml files with the same id sum their test
 	// counts, matching the coverage-side merge for split suites.
 	for _, file := range files {
 		id := artifactID(file, "tests-")
@@ -466,19 +466,21 @@ func resolveFormat(opts Options) (string, error) {
 // --- helpers ---
 
 // artifactID strips a leading prefix and a trailing ".xml" from a path's base
-// name. The id itself may contain dashes. A dot in the stripped remainder
-// separates the id from an optional suite suffix, so split test suites can
-// upload sibling artifacts (coverage-web.unit.xml, coverage-web.integration.xml)
-// that get merged into one workspace row. The suffix itself is discarded — it
-// only exists so multiple files can share the same id in one input directory.
+// name. The id itself may contain single dashes and dots. A double-dash "--"
+// in the stripped remainder separates the id from an optional suite suffix,
+// so split test suites can upload sibling artifacts (coverage-web--unit.xml,
+// coverage-web--integration.xml) that get merged into one workspace row. The
+// suffix itself is discarded — it only exists so multiple files can share the
+// same id in one input directory. Double-dash is chosen so existing dotted ids
+// like "api.v1" and dashed ids like "shared-widget" remain intact.
 func artifactID(path, prefix string) string {
 	base := filepath.Base(path)
 	if !strings.HasPrefix(base, prefix) || !strings.HasSuffix(base, ".xml") {
 		return ""
 	}
 	rest := base[len(prefix) : len(base)-len(".xml")]
-	if dot := strings.IndexByte(rest, '.'); dot >= 0 {
-		return rest[:dot]
+	if sep := strings.Index(rest, "--"); sep >= 0 {
+		return rest[:sep]
 	}
 	return rest
 }

@@ -270,11 +270,11 @@ func TestRunMergesSplitSuitesUnderOneWorkspace(t *testing.T) {
 	dir := t.TempDir()
 	// Same file, three lines. Unit hits lines 1 and 2; integration hits lines 2
 	// and 3. Merged: 3/3 covered.
-	write(t, dir, "coverage-web.unit.xml", coverageDoc(map[string][]int{"src/a.ts": {1, 1, 0}}))
-	write(t, dir, "coverage-web.integration.xml", coverageDoc(map[string][]int{"src/a.ts": {0, 1, 1}}))
+	write(t, dir, "coverage-web--unit.xml", coverageDoc(map[string][]int{"src/a.ts": {1, 1, 0}}))
+	write(t, dir, "coverage-web--integration.xml", coverageDoc(map[string][]int{"src/a.ts": {0, 1, 1}}))
 	// And the corresponding split test artifacts — counts should sum.
-	write(t, dir, "tests-web.unit.xml", `<testsuites tests="3"/>`)
-	write(t, dir, "tests-web.integration.xml", `<testsuites tests="5"/>`)
+	write(t, dir, "tests-web--unit.xml", `<testsuites tests="3"/>`)
+	write(t, dir, "tests-web--integration.xml", `<testsuites tests="5"/>`)
 
 	out, err := run(t, Options{Input: dir})
 	if err != nil {
@@ -288,8 +288,8 @@ func TestRunMergesSplitSuitesUnderOneWorkspace(t *testing.T) {
 	}
 }
 
-// A dashed id (no dot) is untouched — split-suite parsing only kicks in when a
-// dot appears in the id remainder.
+// A dashed id (single dashes, no "--") is untouched — split-suite parsing only
+// kicks in on the double-dash sentinel.
 func TestRunPreservesDashedIDs(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "coverage-shared-widget.xml", coverageDoc(map[string][]int{"src/w.ts": {1, 1}}))
@@ -304,14 +304,44 @@ func TestRunPreservesDashedIDs(t *testing.T) {
 	}
 }
 
+// Dotted ids (e.g. versioned service names like "api.v1") must stay distinct
+// after this feature landed — regression guard for
+// https://github.com/aanantaco/coverage/pull/23#discussion_r3849572610.
+func TestRunPreservesDottedIDsAsDistinctWorkspaces(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "coverage-api.v1.xml", coverageDoc(map[string][]int{"src/v1.go": {1, 1}}))
+	write(t, dir, "coverage-api.v2.xml", coverageDoc(map[string][]int{"src/v2.go": {1, 0, 0}}))
+	// Only v1 gets a display name in config — used to prove config lookup still
+	// resolves by the full dotted id, not a truncated prefix.
+	cfgPath := filepath.Join(dir, "coverage.yaml")
+	write(t, dir, "coverage.yaml", `
+workspaces:
+  "api.v1":
+    display_name: API v1
+`)
+
+	out, err := run(t, Options{
+		Input: dir, ConfigPath: cfgPath, ConfigSet: true,
+	})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !strings.Contains(out, "| API v1 | — | 2 / 2 | 100.0% |") {
+		t.Errorf("api.v1 row missing (config lookup should hit the full dotted id), got:\n%s", out)
+	}
+	if !strings.Contains(out, "| api.v2 | — | 1 / 3 | 33.3% |") {
+		t.Errorf("api.v2 row missing or merged into api.v1, got:\n%s", out)
+	}
+}
+
 // A workspaces config entry keyed on the base id applies to every same-id
 // artifact regardless of suffix.
 func TestRunSplitSuitesShareConfig(t *testing.T) {
 	dir := t.TempDir()
-	write(t, dir, "coverage-worker.unit.xml", coverageDoc(map[string][]int{
+	write(t, dir, "coverage-worker--unit.xml", coverageDoc(map[string][]int{
 		"github.com/acme/repo/services/worker/logic/a.go": {1, 1},
 	}))
-	write(t, dir, "coverage-worker.integration.xml", coverageDoc(map[string][]int{
+	write(t, dir, "coverage-worker--integration.xml", coverageDoc(map[string][]int{
 		"github.com/acme/repo/services/worker/logic/b.go": {1},
 	}))
 	cfgPath := filepath.Join(dir, "coverage.yaml")

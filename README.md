@@ -126,14 +126,15 @@ Both formats are rendered from templates in
 
 | Thing | Convention | Example |
 |---|---|---|
-| Coverage artifact | `coverage-<id>[.<suite>].xml` (Cobertura) | `coverage-thingy.xml`, `coverage-thingy.unit.xml` |
-| Test-count artifact | `tests-<id>[.<suite>].xml` (JUnit) | `tests-thingy.xml`, `tests-thingy.unit.xml` |
-| Workspace id | the `<id>` in the filenames; may contain dashes | `shared-widget` |
+| Coverage artifact | `coverage-<id>[--<suite>].xml` (Cobertura) | `coverage-thingy.xml`, `coverage-thingy--unit.xml` |
+| Test-count artifact | `tests-<id>[--<suite>].xml` (JUnit) | `tests-thingy.xml`, `tests-thingy--unit.xml` |
+| Workspace id | the `<id>` in the filenames; may contain single dashes or dots | `shared-widget`, `api.v1` |
 | Input dir | all `coverage-*.xml` + `tests-*.xml` flattened together | `./coverage-artifacts` |
 
-The optional `.<suite>` suffix lets one workspace ship coverage from multiple
-test jobs — see [Splitting a workspace across test suites](#splitting-a-workspace-across-test-suites)
-below.
+The optional `--<suite>` suffix (double dash) lets one workspace ship coverage
+from multiple test jobs — see
+[Splitting a workspace across test suites](#splitting-a-workspace-across-test-suites)
+below. Double-dash is used so existing dotted or single-dashed ids stay intact.
 
 ## Add it to your workflow
 
@@ -205,12 +206,12 @@ inputs mirror the [CLI flags](#usage); the full annotated workflow is
 
 When one workspace is exercised by multiple test jobs (e.g. unit + integration,
 or a language runtime matrix), upload each job's artifacts with the same base id
-and a distinct `.<suite>` suffix:
+and a distinct `--<suite>` suffix:
 
 | Job | Coverage file | Tests file |
 |---|---|---|
-| unit tests | `coverage-web.unit.xml` | `tests-web.unit.xml` |
-| integration tests | `coverage-web.integration.xml` | `tests-web.integration.xml` |
+| unit tests | `coverage-web--unit.xml` | `tests-web--unit.xml` |
+| integration tests | `coverage-web--integration.xml` | `tests-web--integration.xml` |
 
 The tool groups them by base id (`web`) and produces one row: coverage is
 **unioned per source line** (a line counts as hit if any suite executed it) and
@@ -219,8 +220,10 @@ the merged row; branch coverage is taken as the max across suites (a safe
 approximation — always `>=` any single suite and `<=` the true union).
 
 A single-file id like `coverage-web.xml` still works exactly as before — the
-merge only kicks in when a `.<suite>` suffix appears. Any `coverage.yaml`
-workspace config keyed on `web` applies to every same-id artifact.
+merge only kicks in on the `--` sentinel, so ids with single dashes
+(`shared-widget`) or dots (`api.v1`, `api.v2`) remain distinct workspaces. Any
+`coverage.yaml` workspace config keyed on `web` applies to every same-id
+artifact.
 
 ## Optional config
 

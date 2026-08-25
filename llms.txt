@@ -9,15 +9,17 @@
 
 Each project/test job produces two files in one shared directory:
 
-- `coverage-<id>[.<suite>].xml` — Cobertura coverage
-- `tests-<id>[.<suite>].xml` — JUnit test results (optional; the Tests column shows `—` if absent)
+- `coverage-<id>[--<suite>].xml` — Cobertura coverage
+- `tests-<id>[--<suite>].xml` — JUnit test results (optional; the Tests column shows `—` if absent)
 
-`<id>` is any workspace id you choose (it may contain dashes). The optional
-`.<suite>` suffix lets a workspace split across multiple test jobs (unit +
-integration, matrix) contribute one merged row: coverage is unioned per source
-line, test counts are summed. Single-file usage (`coverage-web.xml`) is
-unchanged. Then, in one aggregation job, download every `coverage-*` / `tests-*`
-artifact into a single directory (`merge-multiple: true`) and run the tool once:
+`<id>` is any workspace id you choose (it may contain single dashes or dots).
+The optional `--<suite>` suffix (double dash) lets a workspace split across
+multiple test jobs (unit + integration, matrix) contribute one merged row:
+coverage is unioned per source line, test counts are summed. Single-file usage
+(`coverage-web.xml`) is unchanged, and ids with single dashes (`shared-widget`)
+or dots (`api.v1`) stay distinct. Then, in one aggregation job, download every
+`coverage-*` / `tests-*` artifact into a single directory
+(`merge-multiple: true`) and run the tool once:
 
     coverage --input ./cov --output "$GITHUB_STEP_SUMMARY"      # Markdown
     coverage --input ./cov --output report.html                # HTML (auto-detected)

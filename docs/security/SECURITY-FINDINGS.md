@@ -149,9 +149,9 @@ The final step of the composite Action builds its argument array by pasting
 `${{ inputs.* }}` expressions directly into a `bash` `run:` block. GitHub
 substitutes those expressions into the script text *before* bash ever sees it,
 so the surrounding double quotes provide no protection: any shell metacharacter
-in an input value is interpreted as shell syntax, not as data. All six inputs
-are affected — `input`, `output`, `ignore`, `config`, `baseline`,
-`fail-on-drop` and `emit-json`.
+in an input value is interpreted as shell syntax, not as data. All seven inputs
+consumed by that script are affected — `input`, `output`, `ignore`, `config`,
+`baseline`, `fail-on-drop`, and `emit-json`.
 
 **Attacker impact.** This Action is published to the Marketplace and runs inside
 other people's repositories. A consumer who wires any externally-influenced

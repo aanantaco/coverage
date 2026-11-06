@@ -19,7 +19,10 @@ inputs:
   output:
     description: >-
       Output path. Use "-" for stdout, or $GITHUB_STEP_SUMMARY (default) to
-      write to the run's Summary tab.
+      write to the run's Summary tab. Values are passed to the tool verbatim
+      (no shell expansion); $GITHUB_STEP_SUMMARY is the one literal that is
+      recognised. For other paths use expressions such as
+      ${{ runner.temp }}/report.html.
     required: false
     default: $GITHUB_STEP_SUMMARY
   ignore:
@@ -107,19 +110,25 @@ runs:
           exit 0
         fi
 
-        # Verify the checksum when a checksum tool is available (best-effort on
-        # the tool's presence, but a mismatch is always fatal).
-        if curl -fsSL -o "${tmp}/checksums.txt" "${base}/checksums.txt"; then
-          line="$(grep " ${asset}\$" "${tmp}/checksums.txt" || true)"
-          if [ -n "$line" ]; then
-            if command -v sha256sum >/dev/null 2>&1; then
-              ( cd "$tmp" && printf '%s\n' "$line" | sha256sum -c - )
-            elif command -v shasum >/dev/null 2>&1; then
-              ( cd "$tmp" && printf '%s\n' "$line" | shasum -a 256 -c - )
-            else
-              echo "No checksum tool found; skipping verification." >&2
-            fi
-          fi
+        # Verify the archive against the release's checksums.txt. Every arm is
+        # fatal: a missing checksums file, a missing asset line, no sha256 tool
+        # or a mismatch stops the job instead of running an unverified binary.
+        if ! curl -fsSL -o "${tmp}/checksums.txt" "${base}/checksums.txt"; then
+          echo "::error::Release ${tag} has no checksums.txt; refusing to run an unverified binary." >&2
+          exit 1
+        fi
+        line="$(grep " ${asset}\$" "${tmp}/checksums.txt" || true)"
+        if [ -z "$line" ]; then
+          echo "::error::${asset} is not listed in checksums.txt for release ${tag}." >&2
+          exit 1
+        fi
+        if command -v sha256sum >/dev/null 2>&1; then
+          ( cd "$tmp" && printf '%s\n' "$line" | sha256sum -c - )
+        elif command -v shasum >/dev/null 2>&1; then
+          ( cd "$tmp" && printf '%s\n' "$line" | shasum -a 256 -c - )
+        else
+          echo "::error::Neither sha256sum nor shasum is available; cannot verify ${asset}." >&2
+          exit 1
         fi
 
         if [ "$ext" = zip ]; then
@@ -145,13 +154,31 @@ runs:
       working-directory: ${{ github.action_path }}
       run: go build -o "${RUNNER_TEMP}/coverage" ./cmd/coverage
 
+    # Inputs reach the script as environment variables (data), never as script
+    # text: a `${{ inputs.x }}` inside `run:` is substituted before bash parses
+    # the line, so quoting would not protect against shell metacharacters in a
+    # consumer-supplied value.
     - name: Render coverage summary
       shell: bash
+      env:
+        INPUT_INPUT: ${{ inputs.input }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_IGNORE: ${{ inputs.ignore }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_BASELINE: ${{ inputs.baseline }}
+        INPUT_FAIL_ON_DROP: ${{ inputs.fail-on-drop }}
+        INPUT_EMIT_JSON: ${{ inputs.emit-json }}
       run: |
-        args=(--input "${{ inputs.input }}" --output "${{ inputs.output }}")
-        [ -n "${{ inputs.ignore }}" ]       && args+=(--ignore "${{ inputs.ignore }}")
-        [ -n "${{ inputs.config }}" ]       && args+=(--config "${{ inputs.config }}")
-        [ -n "${{ inputs.baseline }}" ]     && args+=(--baseline "${{ inputs.baseline }}")
-        [ -n "${{ inputs.fail-on-drop }}" ] && args+=(--fail-on-drop "${{ inputs.fail-on-drop }}")
-        [ -n "${{ inputs.emit-json }}" ]    && args+=(--emit-json "${{ inputs.emit-json }}")
+        # The documented `output: $GITHUB_STEP_SUMMARY` (also the default) is a
+        # literal here, so map that one spelling to the summary file path.
+        output="$INPUT_OUTPUT"
+        if [ "$output" = '$GITHUB_STEP_SUMMARY' ]; then
+          output="$GITHUB_STEP_SUMMARY"
+        fi
+        args=(--input "$INPUT_INPUT" --output "$output")
+        [ -n "$INPUT_IGNORE" ]       && args+=(--ignore "$INPUT_IGNORE")
+        [ -n "$INPUT_CONFIG" ]       && args+=(--config "$INPUT_CONFIG")
+        [ -n "$INPUT_BASELINE" ]     && args+=(--baseline "$INPUT_BASELINE")
+        [ -n "$INPUT_FAIL_ON_DROP" ] && args+=(--fail-on-drop "$INPUT_FAIL_ON_DROP")
+        [ -n "$INPUT_EMIT_JSON" ]    && args+=(--emit-json "$INPUT_EMIT_JSON")
         "${RUNNER_TEMP}/coverage" "${args[@]}"

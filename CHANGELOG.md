@@ -6,6 +6,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- **Action inputs are no longer interpolated into shell.** The composite
+  Action's render step passed all seven `${{ inputs.* }}` values straight into
+  a `bash` `run:` block, so a consumer feeding attacker-influenced data (a PR
+  title, a branch name) into an input handed outsiders command execution on
+  their runner (SEC-001). Inputs now arrive through the step's `env:` and are
+  read as `"$INPUT_…"`. The documented `output: $GITHUB_STEP_SUMMARY` still
+  works; other shell variables in input values are no longer expanded — use
+  `${{ runner.temp }}`-style expressions instead.
+- **Release-binary checksum verification fails closed.** A missing
+  `checksums.txt`, a missing asset line, or a runner without `sha256sum`/
+  `shasum` used to let the downloaded archive run unverified (SEC-006); each
+  now fails the step.
+- **CI hardening.** zizmor scans `ci.yml`, `action.yml` and `dependabot.yml`
+  and gates both release jobs (SEC-005); the release jobs build with
+  `cache: false`; every checkout sets `persist-credentials: false`; the
+  workflow has a `concurrency` group and per-job `timeout-minutes`;
+  Dependabot waits seven days before proposing a new release.
+
 ### Added
 
 - **Split test suites merge into one workspace row.** Multiple

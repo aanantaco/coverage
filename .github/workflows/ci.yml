@@ -9,12 +9,21 @@ on:
 permissions:
   contents: read
 
+# One run per ref. Pull-request runs are superseded by newer pushes; the
+# release runs on main and on tags are never cancelled mid-publish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
     name: Build, test & self-report coverage
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -78,9 +87,12 @@ jobs:
   security-scan:
     name: Security Scan (Trivy)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Run Trivy + render markdown report
         id: trivy
@@ -123,13 +135,80 @@ jobs:
           retention-days: 30
 
   # ==========================================================================
+  # GitHub Actions security scan (zizmor)
+  # ==========================================================================
+  # Audits ci.yml, action.yml and dependabot.yml for template injection,
+  # unpinned actions, credential persistence, cache poisoning, and so on. Runs
+  # with GITHUB_TOKEN so the online audits (known-vulnerable-actions,
+  # impostor-commit, stale-action-refs) run too. Suppressions go in
+  # .github/zizmor.yml with a justification, same idea as .trivyignore.
+  # https://docs.zizmor.sh/audits/
+  actions-scan:
+    name: Security Scan (zizmor)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor + render report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # :latest on purpose: the audit catalogue and the action-vulnerability
+        # data behind it move faster than we would re-pin a digest, and the
+        # image only reads the checkout (no secrets beyond the read-only
+        # GITHUB_TOKEN). Pin a digest if that changes.
+        run: |
+          mkdir -p zizmor-report
+          zizmor() {
+            docker run --rm \
+              -e GH_TOKEN \
+              -v "$GITHUB_WORKSPACE:/workspace" \
+              -w /workspace \
+              ghcr.io/zizmorcore/zizmor:latest \
+              --no-progress --color=never --strict-collection "$@"
+          }
+          # Inline PR annotations (best effort: GitHub renders at most 10 per
+          # step). The exit code comes from the full report below.
+          zizmor --format github --no-exit-codes . || true
+          set +e
+          zizmor --format plain . > zizmor-report/zizmor-report.txt
+          zizmor_exit=$?
+          set -e
+          cat zizmor-report/zizmor-report.txt
+          {
+            echo "## zizmor (GitHub Actions security scan)"
+            echo ""
+            echo '```'
+            cat zizmor-report/zizmor-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          # 0 = clean; 11-14 = findings (highest severity informational..high);
+          # anything else = zizmor itself failed. All non-zero fail the job.
+          exit "$zizmor_exit"
+
+      - name: Upload zizmor report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zizmor-report
+          path: zizmor-report/
+          if-no-files-found: warn
+          retention-days: 30
+
+  # ==========================================================================
   # Other lint (markdown & shell)
   # ==========================================================================
   lint:
     name: Lint (markdown & shell)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Lint Markdown
         # Config + ignores are in .markdownlint-cli2.yaml. Node is preinstalled
@@ -159,19 +238,25 @@ jobs:
   release:
     name: Build release binaries
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [build, security-scan]
+    needs: [build, security-scan, actions-scan]
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: write # create the per-commit prerelease
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          # GoReleaser and `gh release` authenticate with the token from env;
+          # nothing in this job pushes with git.
+          persist-credentials: false
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26"
-          cache: true
+          # No module cache in a publishing job: a poisoned cache entry would
+          # ship inside the release binaries (zizmor cache-poisoning).
+          cache: false
 
       - name: Build binaries (GoReleaser snapshot)
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
@@ -225,19 +310,25 @@ jobs:
   release-tag:
     name: Publish version release
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    needs: [build, security-scan]
+    needs: [build, security-scan, actions-scan]
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: write # create the GitHub Release for the tag
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          # GoReleaser and `gh release` authenticate with the token from env;
+          # nothing in this job pushes with git.
+          persist-credentials: false
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26"
-          cache: true
+          # No module cache in a publishing job: a poisoned cache entry would
+          # ship inside the release binaries (zizmor cache-poisoning).
+          cache: false
 
       - name: Publish release (GoReleaser)
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3

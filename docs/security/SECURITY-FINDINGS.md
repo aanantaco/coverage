@@ -3,8 +3,9 @@
 Scan date: **2026-08-25**. Commit scanned: `5f759be` (branch `main`), plus the
 working tree at the time of the scan.
 
-This is a triage document. Nothing in it has been fixed — each finding is meant
-to be picked up as its own change. No runnable exploit payloads are included.
+This is a triage document. Each finding is meant to be picked up as its own
+change; a finding that has since been fixed carries a **Status** line saying
+when and how. No runnable exploit payloads are included.
 
 ## Summary
 
@@ -144,6 +145,11 @@ and the reason for the move are both stated.
 - **Severity:** High
 - **Source:** manual review (no tool covers `action.yml`; see Coverage gaps)
 - **Location:** `action.yml:151`–`action.yml:156`
+- **Status:** Resolved 2026-11-06. The `Render coverage summary` step now
+  receives every input through its `env:` block (`INPUT_INPUT`,
+  `INPUT_OUTPUT`, …) and the script reads `"$INPUT_…"`; no `${{ inputs.* }}`
+  remains inside a `run:` block. zizmor's `template-injection` audit reports
+  nothing on `action.yml`.
 
 The final step of the composite Action builds its argument array by pasting
 `${{ inputs.* }}` expressions directly into a `bash` `run:` block. GitHub
@@ -291,6 +297,11 @@ fresh.
 - **Source:** manual review, corroborated by Trivy output
 - **Location:** `.github/workflows/ci.yml:78` (the `security-scan` job),
   `.github/workflows/ci.yml:96-97`
+- **Status:** Largely resolved 2026-11-06. CI gained an `actions-scan` job
+  that runs zizmor over `.github/workflows/`, `action.yml` and
+  `dependabot.yml` (`--strict-collection`) and gates both release jobs;
+  suppressions live in `.github/zizmor.yml`. The shellcheck no-op and the
+  govulncheck-at-floor point are unchanged.
 
 The `security-scan` job is the repository's only automated security control, and
 it runs Trivy with `--scanners vuln,secret,misconfig`. On this tree Trivy
@@ -332,6 +343,9 @@ zizmor (or actionlint with `-shellcheck`) over `.github/workflows/` and
 - **Severity:** Low
 - **Source:** manual review
 - **Location:** `action.yml:112`–`action.yml:123`, executed at `action.yml:130`
+- **Status:** Resolved 2026-11-06. A missing `checksums.txt`, a missing asset
+  line, a missing sha256 tool, or a mismatch now exits non-zero before the
+  archive is extracted. The same-origin limitation (no signature) remains.
 
 The Action downloads a prebuilt binary, then attempts to verify it. Every arm of
 that verification is skippable: if the `checksums.txt` fetch fails the whole

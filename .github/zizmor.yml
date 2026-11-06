@@ -1,0 +1,23 @@
+# =============================================================================
+# zizmor configuration (GitHub Actions security scan, ci.yml `actions-scan`)
+# =============================================================================
+# Suppressions for findings we accept, each with a one-line reason, in the
+# spirit of .trivyignore. Prefer fixing the workflow over ignoring the finding.
+#
+#   rules:
+#     <audit-id>:
+#       ignore:
+#         - <workflow-file>.yml[:line[:column]]   # <reason>
+#       disable: true                             # whole audit, last resort
+#
+# Audit ids and what each one means: https://docs.zizmor.sh/audits/
+# Config reference:                   https://docs.zizmor.sh/configuration/
+# =============================================================================
+
+rules:
+  cache-poisoning:
+    ignore:
+      # The `build` job publishes nothing (no release, no artifact): its Go
+      # module cache cannot reach the binaries, which the `release` and
+      # `release-tag` jobs build with cache: false.
+      - ci.yml:28

@@ -1,5 +1,5 @@
 # =============================================================================
-# zizmor configuration (GitHub Actions security scan, ci.yml `actions-scan`)
+# zizmor configuration (GitHub Actions security scan, ci.yml `security-scan`)
 # =============================================================================
 # Suppressions for findings we accept, each with a one-line reason, in the
 # spirit of .trivyignore. Prefer fixing the workflow over ignoring the finding.
